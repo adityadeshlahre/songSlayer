@@ -1,13 +1,12 @@
 import { WebSocketServer } from "ws";
 import { PartyManager } from "./PartyManager";
-import { JOIN_ROOM, ROOM_CREATED, ROOM_JOINED } from "./Strings";
+import { CREATE_ROOM, JOIN_ROOM, ROOM_CREATED, ROOM_JOINED } from "./Strings";
 
 const wss = new WebSocketServer({ port: 8080 });
 
 const partyManager = new PartyManager();
 
 wss.on("connection", function connection(ws) {
-  const { roomCode, memberId } = partyManager.createRoom(ws);
   ws.on("error", console.error);
 
   ws.on("message", function message(data) {
@@ -16,7 +15,8 @@ wss.on("connection", function connection(ws) {
 
   ws.on("message", (data: string) => {
     const { action, roomCode } = JSON.parse(data);
-    if (action === "CREATE_ROOM") {
+    console.log(roomCode, action);
+    if (action === CREATE_ROOM) {
       const { roomCode, memberId } = partyManager.createRoom(ws);
       ws.send(
         JSON.stringify({
@@ -25,16 +25,15 @@ wss.on("connection", function connection(ws) {
         })
       );
     } else if (action === JOIN_ROOM) {
-      const memberId = partyManager.addMemberToRoom(roomCode, ws);
-      // Send back the memberId to the client
+      const { memberId } = partyManager.addMemberToRoom(roomCode, ws);
       ws.send(
         JSON.stringify({ type: ROOM_JOINED, payload: { roomCode, memberId } })
       );
     }
   });
 
-  ws.send("something");
-  ws.on("disconect", () => {
-    partyManager.removeMemberFromRoom(roomCode, memberId, ws);
+  ws.send("WS Connected");
+  ws.on("close", () => {
+    partyManager.disconnectUser(ws);
   });
 });

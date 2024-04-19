@@ -1,17 +1,18 @@
 import { WebSocket } from "ws";
 import { ROOM_CREATED } from "./Strings";
 import { Rooms } from "./Rooms";
-import { PlayerCountManager } from "./PlayerManager";
+import { PlayerCountManager } from "./PlayerCountManager";
+import { Users } from "./Users";
 
 export class PartyManager {
-  private rooms: Map<string, Rooms>;
+  private rooms: Rooms[];
   private PlayerCountManager: PlayerCountManager;
-  private users: Map<string, WebSocket>;
+  private users: Users[];
 
   constructor() {
-    this.rooms = new Map();
+    this.rooms = [];
     this.PlayerCountManager = new PlayerCountManager();
-    this.users = new Map();
+    this.users = [];
   }
 
   private generateRoomCode(): string {
@@ -21,7 +22,7 @@ export class PartyManager {
     for (let i = 0; i < 6; i++) {
       roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    if (this.rooms.has(roomCode)) {
+    if (this.rooms.find((room) => room.roomCode === roomCode)) {
       return this.generateRoomCode();
     }
     return roomCode;
@@ -48,21 +49,22 @@ export class PartyManager {
       song1: { image: "", ytUrl: "" },
       song2: { image: "", ytUrl: "" },
     };
-    this.rooms.set(roomCode, room);
+    this.rooms.push(room);
     this.PlayerCountManager.incrementPlayerCount();
     socket.send(JSON.stringify({ type: ROOM_CREATED, payload: { roomCode } }));
-    return { roomCode: roomCode, memberId: memberId };
+    return { roomCode, memberId };
   }
 
   addMemberToRoom(roomCode: string, socket: WebSocket): { memberId: string } {
-    if (this.rooms.has(roomCode)) {
-      const room = this.rooms.get(roomCode)!;
+    console.log(roomCode);
+    const room = this.rooms.find((room) => room.roomCode === roomCode);
+    if (room) {
       const memberId = this.generateMemberId();
       room.playerCount++;
       room.players.push(memberId);
       room.memberId = memberId;
       this.PlayerCountManager.incrementPlayerCount();
-      this.users.set(memberId, socket);
+      this.users.push({ roomCode, memberId, socket });
       return { memberId: memberId };
     } else {
       throw new Error("Room does not exist");
@@ -73,30 +75,47 @@ export class PartyManager {
     roomCode: string,
     memberId: string,
     socket: WebSocket
-  ): void {
-    if (this.rooms.has(roomCode)) {
-      const room = this.rooms.get(roomCode)!;
+  ): { roomCode: string; memberId: string } {
+    const roomIndex = this.rooms.findIndex(
+      (room) => room.roomCode === roomCode
+    );
+    if (roomIndex !== -1) {
+      const room = this.rooms[roomIndex];
       room.playerCount--;
-      const index = room.players.indexOf(memberId);
-      if (index !== -1) {
-        room.players.splice(index, 1);
+      const memberIndex = room.players.indexOf(memberId);
+      if (memberIndex !== -1) {
+        room.players.splice(memberIndex, 1);
       }
       if (room.playerCount === 0) {
-        this.rooms.delete(roomCode);
+        this.rooms.splice(roomIndex, 1);
       }
       this.PlayerCountManager.decrementPlayerCount();
-      this.users.delete(memberId);
+      const userIndex = this.users.findIndex(
+        (user) => user.roomCode === roomCode && user.memberId === memberId
+      );
+      if (userIndex !== -1) {
+        this.users.splice(userIndex, 1);
+      }
+      return { roomCode: roomCode, memberId: memberId };
     } else {
       throw new Error("Room does not exist");
     }
   }
 
   getRoomMembers(roomCode: string, socket: WebSocket): string[] {
-    if (this.rooms.has(roomCode)) {
-      const room = this.rooms.get(roomCode)!;
+    const room = this.rooms.find((room) => room.roomCode === roomCode);
+    if (room) {
       return room.players;
     } else {
       throw new Error("Room does not exist");
+    }
+  }
+
+  disconnectUser(socket: WebSocket): void {
+    const userIndex = this.users.findIndex((user) => user.socket === socket);
+    if (userIndex !== -1) {
+      const { roomCode, memberId } = this.users[userIndex];
+      this.removeMemberFromRoom(roomCode, memberId, socket);
     }
   }
 
