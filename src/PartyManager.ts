@@ -46,8 +46,8 @@ export class PartyManager {
       memberId,
       playerCount: 1,
       players: [memberId],
-      song1: { image: "", ytUrl: "" },
-      song2: { image: "", ytUrl: "" },
+      song1: { id: "", image: "", ytUrl: "" },
+      song2: { id: "", image: "", ytUrl: "" },
     };
     this.rooms.push(room);
     this.PlayerCountManager.incrementPlayerCount();
@@ -55,8 +55,7 @@ export class PartyManager {
     return { roomCode, memberId };
   }
 
-  addMemberToRoom(roomCode: string, socket: WebSocket): { memberId: string } {
-    console.log(roomCode);
+  joinRoom(roomCode: string, socket: WebSocket): { memberId: string } {
     const room = this.rooms.find((room) => room.roomCode === roomCode);
     if (room) {
       const memberId = this.generateMemberId();

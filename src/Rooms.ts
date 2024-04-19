@@ -3,6 +3,6 @@ export interface Rooms {
   memberId: string;
   playerCount: number;
   players: string[];
-  song1: { image: string; ytUrl: string };
-  song2: { image: string; ytUrl: string };
+  song1: { id: string; image: string; ytUrl: string };
+  song2: { id: string; image: string; ytUrl: string };
 }
