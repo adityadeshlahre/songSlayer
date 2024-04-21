@@ -1,7 +1,8 @@
+import { Songs } from "./Songs";
 import { Vote } from "./Voting";
 
 export class VotingManager {
-  private songVotes: Vote[];
+  private songVotes: Vote[] = [];
 
   constructor() {
     this.songVotes = [];
@@ -17,13 +18,23 @@ export class VotingManager {
     return randomId;
   }
 
-  initializeSongVotes(songsIds: string[]) {
-    this.songVotes = songsIds.map((songsId) => ({
-      id: this.generateRandomId(),
-      songsId,
+  initializeSongVotes(songs: Songs[]) {
+    this.songVotes = songs.map((song) => ({
+      id: song.id || this.generateRandomId(),
+      song,
       votes: 0,
     }));
     return this.songVotes;
+  }
+
+  addSongForVoting(song: Songs): void {
+    if (!this.songVotes.some((v) => v.song.id === song.id)) {
+      this.songVotes.push({
+        id: song.id || this.generateRandomId(),
+        song,
+        votes: 0,
+      });
+    }
   }
 
   voteForSong(songId: string) {
@@ -36,9 +47,26 @@ export class VotingManager {
     }
   }
 
+  removeSongVote(songsId: string): void {
+    this.songVotes = this.songVotes.filter((song) => song.song.id !== songsId);
+  }
+
+  getWinningSongs(): string[] {
+    const maxVotes = Math.max(...this.songVotes.map((song) => song.votes));
+    const winningSongs = this.songVotes
+      .filter((song) => song.votes === maxVotes)
+      .map((song) => song.song.id);
+
+    return winningSongs;
+  }
+
   getSongVotes() {
     return this.songVotes;
   }
 
-  // You can add more methods as needed, such as determining the winning song, resetting votes, etc.
+  resetVotes(): void {
+    this.songVotes.forEach((song) => {
+      song.votes = 0;
+    });
+  }
 }

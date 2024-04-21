@@ -46,12 +46,14 @@ export class PartyManager {
       memberId,
       playerCount: 1,
       players: [memberId],
-      song1: { id: "", image: "", ytUrl: "" },
-      song2: { id: "", image: "", ytUrl: "" },
+      song1: "",
+      song2: "",
     };
     this.rooms.push(room);
     this.PlayerCountManager.incrementPlayerCount();
-    socket.send(JSON.stringify({ type: ROOM_CREATED, payload: { roomCode } }));
+    socket.send(
+      JSON.stringify({ type: ROOM_CREATED, payload: { roomCode, memberId } })
+    );
     return { roomCode, memberId };
   }
 
