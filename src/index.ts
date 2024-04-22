@@ -12,9 +12,17 @@ import {
   ROOM_MEMBERS,
   ADD_SONGS,
   SONGS_ADDED,
-  SUBMIT_SONGS,
-  SUBMITED_SONGS_ADDED,
+  SUBMIT_SONGS_FOR_VOTE,
+  SUBMITED_SONGS_FOR_VOTE_ADDED,
   UP_VOTED,
+  REMOVE_SONG,
+  SONG_REMOVED,
+  SONG_WON,
+  SONG_WON_URL,
+  VOTE_RESET,
+  RESET_VOTE,
+  GET_SONGS_VOTE,
+  ALL_SONGS_VOTE,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
 import { Vote } from "./Voting";
@@ -64,6 +72,13 @@ wss.on("connection", function connection(ws) {
       } catch (error) {
         console.error("Error", error);
       }
+    } else if (action === GET_SONGS_VOTE) {
+      try {
+        const songs: Vote[] = votingManager.getSongVotes();
+        ws.send(JSON.stringify({ type: ALL_SONGS_VOTE, payload: { songs } }));
+      } catch (error) {
+        console.error("Error", error);
+      }
     } else if (action === UP_VOTE) {
       try {
         const songs: Vote[] = votingManager.voteForSong(songId);
@@ -78,21 +93,38 @@ wss.on("connection", function connection(ws) {
       } catch (error) {
         console.error(error);
       }
-    } else if (action === SUBMIT_SONGS) {
+    } else if (action === SUBMIT_SONGS_FOR_VOTE) {
       try {
-        const songs: Songs[] = songsManager.addSong(songId);
+        const songs: Vote[] = votingManager.addSongForVoting(songId); //submitSong function need to fixed
         ws.send(
-          JSON.stringify({ type: SUBMITED_SONGS_ADDED, payload: { songs } })
+          JSON.stringify({
+            type: SUBMITED_SONGS_FOR_VOTE_ADDED,
+            payload: { songs },
+          })
         );
       } catch (error) {
         console.error(error);
       }
-    } else if (action === SUBMIT_SONGS) {
+    } else if (action === REMOVE_SONG) {
       try {
-        const songs: Songs[] = songsManager.addSong(songId);
+        const songs: Songs[] = songsManager.removeSongs(songId);
+        ws.send(JSON.stringify({ type: SONG_REMOVED, payload: { songs } }));
+      } catch (error) {
+        console.error(error);
+      }
+    } else if (action === SONG_WON) {
+      try {
+        const winningSongs: string[] = votingManager.getWinningSongs();
         ws.send(
-          JSON.stringify({ type: SUBMITED_SONGS_ADDED, payload: { songs } })
+          JSON.stringify({ type: SONG_WON_URL, payload: { winningSongs } })
         );
+      } catch (error) {
+        console.error(error);
+      }
+    } else if (action === RESET_VOTE) {
+      try {
+        votingManager.resetVotes();
+        ws.send(JSON.stringify({ type: VOTE_RESET }));
       } catch (error) {
         console.error(error);
       }
@@ -103,3 +135,28 @@ wss.on("connection", function connection(ws) {
     partyManager.disconnectUser(ws);
   });
 });
+
+// async function pollWinningSongs() {
+//   try {
+//     const winningSongs = votingManager.getWinningSongs();
+//     if (winningSongs.length > 0) {
+//       console.log("Winning songs:", winningSongs);
+//       // Perform actions such as playing the winning songs, etc.
+//     } else {
+//       console.log("No winning songs yet.");
+//     }
+//   } catch (error) {
+//     console.error("Error polling for winning songs:", error);
+//   }
+// }
+
+// const pollingInterval = 5000; // 5 seconds
+// const pollingTimer = setInterval(pollWinningSongs, pollingInterval);
+
+// process.on("SIGINT", () => {
+//   clearInterval(pollingTimer);
+//   wss.close();
+//   console.log("Server stopped.");
+// });
+
+// write now maintaining 2 arrays

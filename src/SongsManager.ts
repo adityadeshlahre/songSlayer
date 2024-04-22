@@ -1,8 +1,9 @@
 import { Songs } from "./Songs";
+import { Vote } from "./Voting";
 import { VotingManager } from "./VotingManager";
 
 export class SongsManager {
-  private songs: Songs[] = [];
+  private songs: Songs[];
 
   //   [
   //     { id: "1", image: "image1.jpg", ytUrl: "youtube.com/song1" },
@@ -14,20 +15,30 @@ export class SongsManager {
   private votingManager: VotingManager;
 
   constructor() {
-    // this.songs = [];
+    this.songs = [];
     this.votingManager = new VotingManager();
     // this.votingManager.initializeSongVotes(this.songs.map((song) => song.id));
   }
 
-  submitSong(song: Songs): void {
+  submitSong(song: Songs): Vote[] {
+    // this will return songs in votingManager
     const existingSong = this.songs.find((s) => s.id === song.id);
-    if (!existingSong) {
+    const currentSongsOnVote = this.votingManager.getSongVotes();
+    console.log(currentSongsOnVote);
+    const existingSong2 = currentSongsOnVote.find((s) => s.song.id === song.id);
+    console.log("mq");
+    if (!existingSong && !existingSong2) {
+      console.log("sjhdfjsdf");
       this.songs.push(song);
       this.votingManager.addSongForVoting(song);
     }
+    console.log("mqwee");
+    const currentSongsOnVoteUpdated = this.votingManager.getSongVotes();
+    return currentSongsOnVoteUpdated;
   }
 
   addSong(song: Songs): Songs[] {
+    // this will return songs in songsManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     if (!existingSong) {
       this.songs.push(song);
@@ -36,12 +47,13 @@ export class SongsManager {
     return this.songs;
   }
 
-  removeSongs(songsId: string): void {
+  removeSongs(songsId: string): Songs[] {
     const index = this.songs.findIndex((song) => song.id === songsId);
     if (index !== -1) {
       this.songs.splice(index, 1);
       this.votingManager.removeSongVote(songsId);
     }
+    return this.songs;
   }
 
   addSongsToQueue(songs: Songs) {
