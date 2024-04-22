@@ -39,10 +39,6 @@ wss.on("connection", function connection(ws) {
   ws.on("error", console.error);
   ws.send("WS Connected");
 
-  ws.on("message", function message(data) {
-    console.log("received: %s", data);
-  });
-
   ws.on("message", (data: string) => {
     const { action, roomCode, songId } = JSON.parse(data);
     if (action === CREATE_ROOM && roomCode === undefined) {
@@ -91,7 +87,7 @@ wss.on("connection", function connection(ws) {
         const songs: Songs[] = songsManager.addSong(songId);
         ws.send(JSON.stringify({ type: SONGS_ADDED, payload: { songs } }));
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
       }
     } else if (action === SUBMIT_SONGS_FOR_VOTE) {
       try {
@@ -103,14 +99,14 @@ wss.on("connection", function connection(ws) {
           })
         );
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
       }
     } else if (action === REMOVE_SONG) {
       try {
         const songs: Songs[] = songsManager.removeSongs(songId);
         ws.send(JSON.stringify({ type: SONG_REMOVED, payload: { songs } }));
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
       }
     } else if (action === SONG_WON) {
       try {
@@ -119,14 +115,14 @@ wss.on("connection", function connection(ws) {
           JSON.stringify({ type: SONG_WON_URL, payload: { winningSongs } })
         );
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
       }
     } else if (action === RESET_VOTE) {
       try {
         votingManager.resetVotes();
         ws.send(JSON.stringify({ type: VOTE_RESET }));
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
       }
     }
   });
@@ -159,4 +155,4 @@ wss.on("connection", function connection(ws) {
 //   console.log("Server stopped.");
 // });
 
-// write now maintaining 2 arrays
+// write now maintaining 2 arrays needed fix

@@ -28,17 +28,13 @@ export class VotingManager {
   }
 
   addSongForVoting(song: Songs): Vote[] {
-    console.log("here");
     if (!this.songVotes.some((v) => v.song.id === song.id)) {
-      console.log("here1");
       this.songVotes.push({
         id: song.id,
         song,
         votes: 0,
       });
-      console.log("here2");
     }
-    console.log("here3");
     return this.songVotes;
   }
 
@@ -66,7 +62,6 @@ export class VotingManager {
   }
 
   getSongVotes(): Vote[] {
-    console.log("getSongVotes");
     return this.songVotes;
   }
 

@@ -23,19 +23,17 @@ export class SongsManager {
   submitSong(song: Songs): Vote[] {
     // this will return songs in votingManager
     const existingSong = this.songs.find((s) => s.id === song.id);
-    const currentSongsOnVote = this.votingManager.getSongVotes();
-    console.log(currentSongsOnVote);
-    const existingSong2 = currentSongsOnVote.find((s) => s.song.id === song.id);
-    console.log("mq");
-    if (!existingSong && !existingSong2) {
-      console.log("sjhdfjsdf");
+    const currentSongsOnVote: Vote[] = this.votingManager.getSongVotes();
+    const existingSongOnVote = currentSongsOnVote.find(
+      (s) => s.song.id === song.id
+    );
+    if (!existingSong && !existingSongOnVote) {
       this.songs.push(song);
       this.votingManager.addSongForVoting(song);
     }
-    console.log("mqwee");
-    const currentSongsOnVoteUpdated = this.votingManager.getSongVotes();
+    const currentSongsOnVoteUpdated: Vote[] = this.votingManager.getSongVotes();
     return currentSongsOnVoteUpdated;
-  }
+  } // this method need fixes
 
   addSong(song: Songs): Songs[] {
     // this will return songs in songsManager

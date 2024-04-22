@@ -1,16 +1,19 @@
 import "./App.css";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Landing } from "./screens/Landing";
+import { Join } from "./screens/Join";
+import { Vote } from "./screens/vote";
 
 function App() {
   return (
     <>
-      <div className="">Hello WebSocket</div>
-      <div>
-        <button className="bg-red-300">Create Room</button>
-        <br />
-        <button>Join Room</button>
-        <br />
-        <button>Add Songs Room</button>
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/join" element={<Join />} />
+          <Route path="/vote" element={<Vote />} />
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }
