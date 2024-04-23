@@ -45,7 +45,7 @@ export const Vote = () => {
         onClick={() => {
           navigate("/");
         }}
-        text="There"
+        text="!"
       >
         HOME
       </Button>
