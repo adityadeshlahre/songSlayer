@@ -1,12 +1,11 @@
 import { useLocation } from "react-router-dom";
 
 export const Room = () => {
-  const location = useLocation();
-  const url = new URLSearchParams(location.search);
-  const roomCode = url.toString();
+  const roomCodeFromUrl = useLocation().pathname.split("/").pop();
   return (
     <>
-      <div className="text-white">{roomCode}</div>
+      <div className="text-white">{roomCodeFromUrl}</div>
+      <div>Table</div>
     </>
   );
 };

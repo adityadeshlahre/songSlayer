@@ -2,39 +2,80 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useSocket } from "../hooks/useSocket";
 import {
+  GET_ONE_ROOM,
   RESET_VOTE,
   UP_VOTED,
   VOTE_FOR_SONG,
   VOTE_RESET,
 } from "../messages/Strings";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+interface SocketData {
+  payload: {
+    roomCode: string;
+    memberId: string;
+    playerCount: number;
+    players: string[];
+    song1: {
+      id: string;
+      song: {
+        id: string;
+        image: string;
+        ytUrl: string;
+      };
+      votes: number;
+    };
+    song2: {
+      id: string;
+      song: {
+        id: string;
+        image: string;
+        ytUrl: string;
+      };
+      votes: number;
+    };
+  };
+}
 
 export const Vote = () => {
   const navigate = useNavigate();
+  const [roomCode, setRoomCode] = useState<string>("");
+  const [data, setData] = useState<SocketData>();
 
   const socket = useSocket();
 
-  const location = useLocation();
-  const url = new URLSearchParams(location.search);
-  const roomCode = url.toString();
+  const roomCodeFromUrl = useLocation().pathname.split("/").pop();
 
   useEffect(() => {
     if (!socket) {
       return;
     }
+
+    if (roomCodeFromUrl) {
+      setRoomCode(roomCodeFromUrl);
+      return;
+    }
+
+    socket.send(JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCode }));
     socket.onmessage = (event) => {
-      const messages = JSON.parse(event.data);
-      console.log(messages);
-      switch (messages.action) {
-        case VOTE_FOR_SONG:
-          console.log(UP_VOTED);
-          break;
-        case RESET_VOTE:
-          console.log(VOTE_RESET);
-          break;
+      try {
+        const messages = JSON.parse(event.data);
+        switch (messages.type) {
+          case VOTE_FOR_SONG:
+            console.log(UP_VOTED);
+            break;
+          case RESET_VOTE:
+            console.log(VOTE_RESET);
+            break;
+          default:
+            setData(messages.payload);
+            break;
+        }
+      } catch (error) {
+        console.error("Error parsing message data:", error);
       }
     };
-  }, []);
+  }, [socket, roomCode]);
 
   if (!socket)
     return (
@@ -46,6 +87,7 @@ export const Vote = () => {
   return (
     <>
       <div className="text-white">{roomCode}</div>
+      <div className="text-yellow-200">{JSON.stringify(data)}</div>
       <Button
         onClick={() => {
           navigate("/");

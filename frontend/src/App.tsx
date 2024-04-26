@@ -12,8 +12,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/join" element={<Join />} />
-          <Route path="/vote" element={<Vote />} />
-          <Route path="/room/" element={<Room />} />
+          <Route path="/vote/*" element={<Vote />} />
+          <Route path="/room/*" element={<Room />} />
         </Routes>
       </BrowserRouter>
     </>

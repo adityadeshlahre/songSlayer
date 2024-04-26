@@ -19,19 +19,18 @@ export const Join = () => {
 
     socket.onmessage = (event) => {
       const messages = JSON.parse(event.data);
-      console.log(messages);
       switch (messages.type) {
         case ROOM_JOINED:
           if (roomCode === messages.payload.roomCode) {
             localStorage.setItem("roomCode", messages.payload.roomCode);
             localStorage.setItem("memberId", messages.payload.memberId);
-            navigate(`/room?${roomCode}`);
+            navigate(`/vote/${roomCode}`);
           }
           break;
         case RANDOM_ROOM_JOINED:
           localStorage.setItem("roomCode", messages.payload.roomCode);
           localStorage.setItem("memberId", messages.payload.memberId);
-          navigate(`/room?${messages.payload.roomCode}`);
+          navigate(`/vote/${messages.payload.roomCode}`);
           break;
         default:
           break;
