@@ -18,7 +18,7 @@ export class VotingManager {
     return randomId;
   }
 
-  initializeSongVotes(songs: Song[]) {
+  initializeSongVotes(songs: Song[]): Vote[] {
     this.songVotes = songs.map((song) => ({
       id: song.id || this.generateRandomId(),
       song,
@@ -30,7 +30,7 @@ export class VotingManager {
   addSongForVoting(song: Song): Vote[] {
     if (!this.songVotes.some((v) => v.song.id === song.id)) {
       this.songVotes.push({
-        id: song.id,
+        id: song.id || this.generateRandomId(),
         song,
         votes: 0,
       });
@@ -38,10 +38,13 @@ export class VotingManager {
     return this.songVotes;
   }
 
-  voteForSong(songId: string) {
-    const songIndex = this.songVotes.findIndex((songs) => songs.id === songId);
+  voteForSong(songId: string): Vote[] {
+    console.log(songId);
+    const songIndex = this.songVotes.findIndex((song) => song.id === songId);
+    console.log(songIndex);
     if (songIndex !== -1) {
       this.songVotes[songIndex].votes++;
+      console.log(":JIJWIE");
       return this.getSongVotes();
     } else {
       throw new Error("Invalid song ID");

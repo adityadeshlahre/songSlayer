@@ -4,43 +4,21 @@ import { useSocket } from "../hooks/useSocket";
 import {
   GET_ONE_ROOM,
   RESET_VOTE,
+  UP_VOTE,
   UP_VOTED,
-  VOTE_FOR_SONG,
   VOTE_RESET,
 } from "../messages/Strings";
 import { useEffect, useState } from "react";
-
-interface SocketData {
-  payload: {
-    roomCode: string;
-    memberId: string;
-    playerCount: number;
-    players: string[];
-    song1: {
-      id: string;
-      song: {
-        id: string;
-        image: string;
-        ytUrl: string;
-      };
-      votes: number;
-    };
-    song2: {
-      id: string;
-      song: {
-        id: string;
-        image: string;
-        ytUrl: string;
-      };
-      votes: number;
-    };
-  };
-}
+import { SocketData } from "../types/socketData";
 
 export const Vote = () => {
   const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState<string>("");
   const [data, setData] = useState<SocketData>();
+  const [song1Vote, setSong1Vote] = useState<number>(0);
+  const [song2Vote, setSong2Vote] = useState<number>(0);
+  const [song1Id, setSong1Id] = useState<string>("");
+  const [song2Id, setSong2Id] = useState<string>("");
 
   const socket = useSocket();
 
@@ -53,29 +31,55 @@ export const Vote = () => {
 
     if (roomCodeFromUrl) {
       setRoomCode(roomCodeFromUrl);
-      return;
     }
 
-    socket.send(JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCode }));
+    const intervalId = setInterval(() => {
+      socket.send(
+        JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCodeFromUrl })
+      );
+    }, 5000);
+
+    // socket.send(
+    //   JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCodeFromUrl })
+    // );
+
     socket.onmessage = (event) => {
       try {
         const messages = JSON.parse(event.data);
         switch (messages.type) {
-          case VOTE_FOR_SONG:
-            console.log(UP_VOTED);
+          case UP_VOTED:
+            socket.send(JSON.stringify({ action: UP_VOTE, songId: song1Id }));
+            socket.send(JSON.stringify({ action: UP_VOTE, songId: song2Id }));
             break;
           case RESET_VOTE:
             console.log(VOTE_RESET);
             break;
           default:
             setData(messages.payload);
+            setSong1Vote(messages.payload.song1.votes);
+            setSong2Vote(messages.payload.song2.votes);
+            setSong1Id(messages.payload.song1.id);
+            setSong2Id(messages.payload.song2.id);
             break;
         }
       } catch (error) {
         console.error("Error parsing message data:", error);
       }
     };
-  }, [socket, roomCode]);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [socket, roomCodeFromUrl]);
+
+  useEffect(() => {
+    if (!socket) {
+      const timeoutId = setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [socket]);
 
   if (!socket)
     return (
@@ -92,7 +96,6 @@ export const Vote = () => {
         onClick={() => {
           navigate("/");
         }}
-        text="!"
       >
         HOME
       </Button>
@@ -105,40 +108,39 @@ export const Vote = () => {
         <input className="w-40 h-8" placeholder="Enter Room Code"></input>
         <br />
         <br />
-
+        <div className="flex justify-center box-border h-32 w-32 p-4 border-4 bg-violet-200 text-green-800">
+          {JSON.stringify(song1Id)} : {JSON.stringify(song1Vote)}
+          <br />
+          {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
+        </div>
+        <br />
+        <br />
         <div>
-          {/* this button need to be fixed */}
-          <button
+          <Button
             onClick={() => {
-              socket.send(JSON.stringify({ action: VOTE_FOR_SONG }));
+              socket.send(JSON.stringify({ action: UP_VOTE, songId: song1Id }));
             }}
-            className="bg-green-300 border-4 border-white"
           >
             Vote Song 1
-            <Button
-              onClick={() => {
-                socket.send(JSON.stringify({ action: VOTE_FOR_SONG }));
-              }}
-              text="UP"
-            >
-              ^
-            </Button>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => {
-              socket.send(JSON.stringify({ action: VOTE_FOR_SONG })); //songId needed
+              socket.send(JSON.stringify({ action: UP_VOTE, songId: song2Id }));
             }}
-            className="bg-green-300 border-4 border-white"
           >
             Vote Song 2
-            <Button
-              onClick={() => {
-                socket.send(JSON.stringify({ action: VOTE_FOR_SONG })); //songId needed
-              }}
-              text="UP"
-            >
-              ^
-            </Button>
+          </Button>
+          <button
+            onClick={() => {
+              socket.send(
+                JSON.stringify({
+                  action: GET_ONE_ROOM,
+                  roomCode: roomCodeFromUrl,
+                })
+              );
+            }}
+          >
+            skdf
           </button>
         </div>
       </div>

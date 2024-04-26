@@ -3,16 +3,20 @@ import { ROOM_CREATED } from "./Strings";
 import { Rooms } from "./Rooms";
 import { PlayerCountManager } from "./PlayerCountManager";
 import { Users } from "./Users";
+import { VotingManager } from "./VotingManager";
+import { Vote } from "./Vote";
 
 export class RoomManager {
   private rooms: Rooms[];
   private PlayerCountManager: PlayerCountManager;
   private users: Users[];
+  private votingManager: VotingManager;
 
-  constructor() {
+  constructor(votingManager: VotingManager) {
     this.rooms = [];
     this.PlayerCountManager = new PlayerCountManager();
     this.users = [];
+    this.votingManager = votingManager;
   }
 
   private generateRoomCode(): string {
@@ -146,9 +150,41 @@ export class RoomManager {
 
   getRoomDetails(roomCode: string): Rooms | undefined {
     return this.rooms.find((room) => room.roomCode === roomCode);
-  }
+  } // this method is not returning the updates values
 
   allRoomDetails(): Rooms[] {
+    return this.rooms;
+  }
+
+  pushSongsToRoom(roomCode: string): Rooms[] {
+    const songs: Vote[] = this.votingManager.getSongVotes();
+
+    if (songs.length < 2) {
+      throw new Error("Not enough songs available for voting");
+    }
+
+    const shuffledSongs = songs.sort(() => 0.5 - Math.random());
+    const selectedSongs = shuffledSongs.slice(0, 2);
+
+    const roomIndex = this.rooms.findIndex(
+      (room) => room.roomCode === roomCode
+    );
+    if (roomIndex === -1) {
+      throw new Error("Room does not exist");
+    }
+
+    this.rooms[roomIndex].song1 = {
+      id: selectedSongs[0].id,
+      song: selectedSongs[0].song,
+      votes: selectedSongs[0].votes,
+    };
+
+    this.rooms[roomIndex].song2 = {
+      id: selectedSongs[1].id,
+      song: selectedSongs[1].song,
+      votes: selectedSongs[1].votes,
+    };
+
     return this.rooms;
   }
 }

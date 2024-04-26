@@ -29,17 +29,20 @@ import {
   ALL_ROOMS,
   GET_ONE_ROOM,
   ONE_ROOM,
+  SUBMIT_SONGS_TO_VOTE,
+  SUBMIT_SONGS_TO_VOTE_ADDED,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
 import { Vote } from "./Vote";
 import { Song } from "./Song";
 import { SongsManager } from "./SongsManager";
+import { Rooms } from "./Rooms";
 
 const wss = new WebSocketServer({ port: 8080 });
 
-const roomManager = new RoomManager();
 const votingManager = new VotingManager();
-const songsManager = new SongsManager();
+const roomManager = new RoomManager(votingManager);
+const songsManager = new SongsManager(votingManager);
 
 wss.on("connection", function connection(ws) {
   ws.on("error", console.error);
@@ -105,6 +108,7 @@ wss.on("connection", function connection(ws) {
       }
     } else if (action === UP_VOTE) {
       try {
+        console.log(songId);
         const songs: Vote[] = votingManager.voteForSong(songId);
         ws.send(JSON.stringify({ type: UP_VOTED, payload: { songs } }));
       } catch (error) {
@@ -117,13 +121,25 @@ wss.on("connection", function connection(ws) {
       } catch (error) {
         console.error("Error:", error);
       }
+    } else if (action === SUBMIT_SONGS_TO_VOTE) {
+      try {
+        const songs: Vote[] = songsManager.submitSong(songId);
+        ws.send(
+          JSON.stringify({
+            type: SUBMIT_SONGS_TO_VOTE_ADDED,
+            payload: { songs },
+          })
+        );
+      } catch (error) {
+        console.error("Error:", error);
+      }
     } else if (action === SUBMIT_SONGS_FOR_VOTE) {
       try {
-        const songs: Vote[] = votingManager.addSongForVoting(songId); //submitSong function need to fixed
+        const roomSongs: Rooms[] = roomManager.pushSongsToRoom(roomCode);
         ws.send(
           JSON.stringify({
             type: SUBMITED_SONGS_FOR_VOTE_ADDED,
-            payload: { songs },
+            payload: { roomSongs },
           })
         );
       } catch (error) {

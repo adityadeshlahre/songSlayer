@@ -14,14 +14,23 @@ export class SongsManager {
 
   private votingManager: VotingManager;
 
-  constructor() {
+  constructor(votingManager: VotingManager) {
     this.songs = [];
-    this.votingManager = new VotingManager();
+    this.votingManager = votingManager;
     // this.votingManager.initializeSongVotes(this.songs.map((song) => song.id));
   }
 
+  private generateRandomId(): string {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let randomId = "";
+    for (let i = 0; i < 3; i++) {
+      randomId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return randomId;
+  }
+
   submitSong(song: Song): Vote[] {
-    // this will return songs in votingManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     const currentSongsOnVote: Vote[] = this.votingManager.getSongVotes();
     const existingSongOnVote = currentSongsOnVote.find(
@@ -33,9 +42,12 @@ export class SongsManager {
     }
     const currentSongsOnVoteUpdated: Vote[] = this.votingManager.getSongVotes();
     return currentSongsOnVoteUpdated;
-  } // this method need fixes
+  }
 
   addSong(song: Song): Song[] {
+    if (song.id === "") {
+      song.id === this.generateRandomId();
+    }
     // this will return songs in songsManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     if (!existingSong) {

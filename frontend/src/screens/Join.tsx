@@ -51,7 +51,6 @@ export const Join = () => {
         onClick={() => {
           navigate("/");
         }}
-        text="!"
       >
         HOME
       </Button>
