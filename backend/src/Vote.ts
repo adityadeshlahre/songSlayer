@@ -1,7 +1,7 @@
-import { Songs } from "./Songs";
+import { Song } from "./Song";
 
 export interface Vote {
   id: string;
-  song: Songs;
+  song: Song;
   votes: number;
 }

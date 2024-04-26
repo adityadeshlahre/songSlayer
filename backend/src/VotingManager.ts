@@ -1,5 +1,5 @@
-import { Songs } from "./Songs";
-import { Vote } from "./Voting";
+import { Song } from "./Song";
+import { Vote } from "./Vote";
 
 export class VotingManager {
   private songVotes: Vote[];
@@ -18,7 +18,7 @@ export class VotingManager {
     return randomId;
   }
 
-  initializeSongVotes(songs: Songs[]) {
+  initializeSongVotes(songs: Song[]) {
     this.songVotes = songs.map((song) => ({
       id: song.id || this.generateRandomId(),
       song,
@@ -27,7 +27,7 @@ export class VotingManager {
     return this.songVotes;
   }
 
-  addSongForVoting(song: Songs): Vote[] {
+  addSongForVoting(song: Song): Vote[] {
     if (!this.songVotes.some((v) => v.song.id === song.id)) {
       this.songVotes.push({
         id: song.id,

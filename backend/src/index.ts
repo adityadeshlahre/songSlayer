@@ -25,10 +25,14 @@ import {
   ALL_SONGS_VOTE,
   JOIN_RANDOM_ROOM,
   RANDOM_ROOM_JOINED,
+  GET_ALL_ROOMS,
+  ALL_ROOMS,
+  GET_ONE_ROOM,
+  ONE_ROOM,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
-import { Vote } from "./Voting";
-import { Songs } from "./Songs";
+import { Vote } from "./Vote";
+import { Song } from "./Song";
 import { SongsManager } from "./SongsManager";
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -56,8 +60,8 @@ wss.on("connection", function connection(ws) {
       ws.send(
         JSON.stringify({ type: ROOM_JOINED, payload: { roomCode, memberId } })
       );
-    } else if (action === JOIN_RANDOM_ROOM && roomCode !== undefined) {
-      const { memberId } = roomManager.joinRandomRoom(ws);
+    } else if (action === JOIN_RANDOM_ROOM && roomCode === undefined) {
+      const { roomCode, memberId } = roomManager.joinRandomRoom(ws);
       ws.send(
         JSON.stringify({
           type: RANDOM_ROOM_JOINED,
@@ -71,9 +75,23 @@ wss.on("connection", function connection(ws) {
       } catch (error) {
         console.error("Error:", error);
       }
+    } else if (action === GET_ALL_ROOMS) {
+      try {
+        const allRoom = roomManager.allRoomDetails();
+        ws.send(JSON.stringify({ type: ALL_ROOMS, payload: allRoom }));
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    } else if (action === GET_ONE_ROOM) {
+      try {
+        const oneRoom = roomManager.getRoomDetails(roomCode);
+        ws.send(JSON.stringify({ type: ONE_ROOM, payload: oneRoom }));
+      } catch (error) {
+        console.error("Error:", error);
+      }
     } else if (action === GET_SONGS) {
       try {
-        const songs: Songs[] = songsManager.getAllSongs();
+        const songs: Song[] = songsManager.getAllSongs();
         ws.send(JSON.stringify({ type: ALL_SONGS, payload: { songs } }));
       } catch (error) {
         console.error("Error", error);
@@ -94,7 +112,7 @@ wss.on("connection", function connection(ws) {
       }
     } else if (action === ADD_SONGS) {
       try {
-        const songs: Songs[] = songsManager.addSong(songId);
+        const songs: Song[] = songsManager.addSong(songId);
         ws.send(JSON.stringify({ type: SONGS_ADDED, payload: { songs } }));
       } catch (error) {
         console.error("Error:", error);
@@ -113,7 +131,7 @@ wss.on("connection", function connection(ws) {
       }
     } else if (action === REMOVE_SONG) {
       try {
-        const songs: Songs[] = songsManager.removeSongs(songId);
+        const songs: Song[] = songsManager.removeSongs(songId);
         ws.send(JSON.stringify({ type: SONG_REMOVED, payload: { songs } }));
       } catch (error) {
         console.error("Error:", error);

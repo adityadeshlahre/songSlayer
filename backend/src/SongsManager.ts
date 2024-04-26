@@ -1,9 +1,9 @@
-import { Songs } from "./Songs";
-import { Vote } from "./Voting";
+import { Song } from "./Song";
+import { Vote } from "./Vote";
 import { VotingManager } from "./VotingManager";
 
 export class SongsManager {
-  private songs: Songs[];
+  private songs: Song[];
 
   //   [
   //     { id: "1", image: "image1.jpg", ytUrl: "youtube.com/song1" },
@@ -20,7 +20,7 @@ export class SongsManager {
     // this.votingManager.initializeSongVotes(this.songs.map((song) => song.id));
   }
 
-  submitSong(song: Songs): Vote[] {
+  submitSong(song: Song): Vote[] {
     // this will return songs in votingManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     const currentSongsOnVote: Vote[] = this.votingManager.getSongVotes();
@@ -35,7 +35,7 @@ export class SongsManager {
     return currentSongsOnVoteUpdated;
   } // this method need fixes
 
-  addSong(song: Songs): Songs[] {
+  addSong(song: Song): Song[] {
     // this will return songs in songsManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     if (!existingSong) {
@@ -45,7 +45,7 @@ export class SongsManager {
     return this.songs;
   }
 
-  removeSongs(songsId: string): Songs[] {
+  removeSongs(songsId: string): Song[] {
     const index = this.songs.findIndex((song) => song.id === songsId);
     if (index !== -1) {
       this.songs.splice(index, 1);
@@ -54,7 +54,7 @@ export class SongsManager {
     return this.songs;
   }
 
-  addSongsToQueue(songs: Songs) {
+  addSongsToQueue(songs: Song) {
     //this should be redish queue
   }
 
@@ -62,7 +62,7 @@ export class SongsManager {
     this.songs.push({ id, image, ytUrl });
   }
 
-  getAllSongs(): Songs[] {
+  getAllSongs(): Song[] {
     return this.songs;
   }
 

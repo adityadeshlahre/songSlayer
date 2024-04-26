@@ -1,6 +1,8 @@
 export const ROOM_CREATED = "ROOM_CREATED";
 export const ROOM_DELETED = "ROOM_DELETED";
 export const ROOM_JOINED = "ROOM_JOINED";
+export const RANDOM_ROOM_JOINED = "RANDOM_ROOM_JOINED";
+export const JOIN_RANDOM_ROOM = "JOIN_RANDOM_ROOM";
 export const CREATE_ROOM = "CREATE_ROOM";
 export const JOIN_ROOM = "JOIN_ROOM";
 export const LEFT_ROOM = "LEFT_ROOM";
@@ -24,3 +26,7 @@ export const SONG_WON = "SONG_WON";
 export const SONG_WON_URL = "SONG_WON_URL";
 export const RESET_VOTE = "RESET_VOTE";
 export const VOTE_RESET = "VOTE_RESET_DONE";
+export const ONE_ROOM = "ONE_ROOM";
+export const GET_ONE_ROOM = "GET_ONE_ROOM";
+export const ALL_ROOMS = "ALL_ROOMS";
+export const GET_ALL_ROOMS = "GET_ALL_ROOMS";

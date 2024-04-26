@@ -26,3 +26,7 @@ export const SONG_WON = "SONG_WON";
 export const SONG_WON_URL = "SONG_WON_URL";
 export const RESET_VOTE = "RESET_VOTE";
 export const VOTE_RESET = "VOTE_RESET_DONE";
+export const ONE_ROOM = "ONE_ROOM";
+export const GET_ONE_ROOM = "GET_ONE_ROOM";
+export const ALL_ROOMS = "ALL_ROOMS";
+export const GET_ALL_ROOMS = "GET_ALL_ROOMS";

@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   CREATE_ROOM,
-  JOIN_ROOM,
+  JOIN_RANDOM_ROOM,
+  RANDOM_ROOM_JOINED,
   ROOM_CREATED,
-  ROOM_JOINED,
 } from "../messages/Strings";
 
 export const Landing = () => {
@@ -20,6 +20,11 @@ export const Landing = () => {
       console.log(messages);
       switch (messages.type) {
         case ROOM_CREATED:
+          localStorage.setItem("roomCode", messages.payload.roomCode);
+          localStorage.setItem("memberId", messages.payload.memberId);
+          navigate(`/room?${messages.payload.roomCode}`);
+          break;
+        case RANDOM_ROOM_JOINED:
           localStorage.setItem("roomCode", messages.payload.roomCode);
           localStorage.setItem("memberId", messages.payload.memberId);
           navigate(`/room?${messages.payload.roomCode}`);
@@ -61,6 +66,16 @@ export const Landing = () => {
           className="bg-blue-300 border-4 border-white"
         >
           I Have A Code
+        </button>
+        <br />
+        <br />
+        <button
+          onClick={() => {
+            socket.send(JSON.stringify({ action: JOIN_RANDOM_ROOM }));
+          }}
+          className="bg-green-300 border-4 border-white"
+        >
+          Join Random Room
         </button>
       </div>
     </>

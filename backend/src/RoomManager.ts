@@ -46,8 +46,8 @@ export class RoomManager {
       memberId,
       playerCount: 1,
       players: [memberId],
-      song1: "",
-      song2: "",
+      song1: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
+      song2: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
     };
     this.rooms.push(room);
     this.PlayerCountManager.incrementPlayerCount();
@@ -142,5 +142,13 @@ export class RoomManager {
 
   getGlobalPlayerCount(): number {
     return this.PlayerCountManager.getPlayerCount();
+  }
+
+  getRoomDetails(roomCode: string): Rooms | undefined {
+    return this.rooms.find((room) => room.roomCode === roomCode);
+  }
+
+  allRoomDetails(): Rooms[] {
+    return this.rooms;
   }
 }

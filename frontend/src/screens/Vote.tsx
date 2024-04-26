@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useSocket } from "../hooks/useSocket";
 import {
@@ -13,6 +13,10 @@ export const Vote = () => {
   const navigate = useNavigate();
 
   const socket = useSocket();
+
+  const location = useLocation();
+  const url = new URLSearchParams(location.search);
+  const roomCode = url.toString();
 
   useEffect(() => {
     if (!socket) {
@@ -41,6 +45,7 @@ export const Vote = () => {
 
   return (
     <>
+      <div className="text-white">{roomCode}</div>
       <Button
         onClick={() => {
           navigate("/");
@@ -60,7 +65,13 @@ export const Vote = () => {
         <br />
 
         <div>
-          <button className="bg-yellow-300 border-4 border-white">
+          {/* this button need to be fixed */}
+          <button
+            onClick={() => {
+              socket.send(JSON.stringify({ action: VOTE_FOR_SONG }));
+            }}
+            className="bg-green-300 border-4 border-white"
+          >
             Vote Song 1
             <Button
               onClick={() => {
@@ -71,7 +82,12 @@ export const Vote = () => {
               ^
             </Button>
           </button>
-          <button className="bg-green-300 border-4 border-white">
+          <button
+            onClick={() => {
+              socket.send(JSON.stringify({ action: VOTE_FOR_SONG })); //songId needed
+            }}
+            className="bg-green-300 border-4 border-white"
+          >
             Vote Song 2
             <Button
               onClick={() => {
