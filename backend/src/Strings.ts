@@ -1,6 +1,8 @@
 export const ROOM_CREATED = "ROOM_CREATED";
 export const ROOM_DELETED = "ROOM_DELETED";
 export const ROOM_JOINED = "ROOM_JOINED";
+export const RANDOM_ROOM_JOINED = "RANDOM_ROOM_JOINED";
+export const JOIN_RANDOM_ROOM = "JOIN_RANDOM_ROOM";
 export const CREATE_ROOM = "CREATE_ROOM";
 export const JOIN_ROOM = "JOIN_ROOM";
 export const LEFT_ROOM = "LEFT_ROOM";

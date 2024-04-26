@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 export const Room = () => {
   const location = useLocation();

@@ -4,7 +4,7 @@ import { Rooms } from "./Rooms";
 import { PlayerCountManager } from "./PlayerCountManager";
 import { Users } from "./Users";
 
-export class PartyManager {
+export class RoomManager {
   private rooms: Rooms[];
   private PlayerCountManager: PlayerCountManager;
   private users: Users[];
@@ -110,6 +110,26 @@ export class PartyManager {
     } else {
       throw new Error("Room does not exist");
     }
+  }
+
+  joinRandomRoom(socket: WebSocket): { roomCode: string; memberId: string } {
+    if (this.rooms.length === 0) {
+      throw new Error("No available rooms to join");
+    }
+
+    const randomIndex = Math.floor(Math.random() * this.rooms.length);
+    const randomRoom = this.rooms[randomIndex];
+
+    const memberId = this.generateMemberId();
+    const { roomCode } = randomRoom;
+
+    randomRoom.playerCount++;
+    randomRoom.players.push(memberId);
+    randomRoom.memberId = memberId;
+    this.PlayerCountManager.incrementPlayerCount();
+    this.users.push({ roomCode, memberId, socket });
+
+    return { roomCode, memberId };
   }
 
   disconnectUser(socket: WebSocket): void {

@@ -1,5 +1,5 @@
 import { WebSocketServer } from "ws";
-import { PartyManager } from "./PartyManager";
+import { RoomManager } from "./RoomManager";
 import {
   CREATE_ROOM,
   GET_ROOM_MEMBERS,
@@ -23,6 +23,8 @@ import {
   RESET_VOTE,
   GET_SONGS_VOTE,
   ALL_SONGS_VOTE,
+  JOIN_RANDOM_ROOM,
+  RANDOM_ROOM_JOINED,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
 import { Vote } from "./Voting";
@@ -31,7 +33,7 @@ import { SongsManager } from "./SongsManager";
 
 const wss = new WebSocketServer({ port: 8080 });
 
-const partyManager = new PartyManager();
+const roomManager = new RoomManager();
 const votingManager = new VotingManager();
 const songsManager = new SongsManager();
 
@@ -42,7 +44,7 @@ wss.on("connection", function connection(ws) {
   ws.on("message", (data: string) => {
     const { action, roomCode, songId } = JSON.parse(data);
     if (action === CREATE_ROOM && roomCode === undefined) {
-      const { roomCode, memberId } = partyManager.createRoom(ws);
+      const { roomCode, memberId } = roomManager.createRoom(ws);
       ws.send(
         JSON.stringify({
           type: ROOM_CREATED,
@@ -50,13 +52,21 @@ wss.on("connection", function connection(ws) {
         })
       );
     } else if (action === JOIN_ROOM && roomCode !== undefined) {
-      const { memberId } = partyManager.joinRoom(roomCode, ws);
+      const { memberId } = roomManager.joinRoom(roomCode, ws);
       ws.send(
         JSON.stringify({ type: ROOM_JOINED, payload: { roomCode, memberId } })
       );
+    } else if (action === JOIN_RANDOM_ROOM && roomCode !== undefined) {
+      const { memberId } = roomManager.joinRandomRoom(ws);
+      ws.send(
+        JSON.stringify({
+          type: RANDOM_ROOM_JOINED,
+          payload: { roomCode, memberId },
+        })
+      );
     } else if (action === GET_ROOM_MEMBERS) {
       try {
-        const members = partyManager.getRoomMembers(roomCode, ws);
+        const members = roomManager.getRoomMembers(roomCode, ws);
         ws.send(JSON.stringify({ type: ROOM_MEMBERS, payload: members }));
       } catch (error) {
         console.error("Error:", error);
@@ -128,7 +138,7 @@ wss.on("connection", function connection(ws) {
   });
 
   ws.on("close", () => {
-    partyManager.disconnectUser(ws);
+    roomManager.disconnectUser(ws);
   });
 });
 
