@@ -2,7 +2,7 @@ import { Vote } from "./Vote";
 
 export interface Rooms {
   roomCode: string;
-  memberId: string;
+  memberId: string[];
   playerCount: number;
   players: string[];
   song1: Vote;

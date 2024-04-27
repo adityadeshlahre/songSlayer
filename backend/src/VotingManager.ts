@@ -39,12 +39,9 @@ export class VotingManager {
   }
 
   voteForSong(songId: string): Vote[] {
-    console.log(songId);
     const songIndex = this.songVotes.findIndex((song) => song.id === songId);
-    console.log(songIndex);
     if (songIndex !== -1) {
       this.songVotes[songIndex].votes++;
-      console.log(":JIJWIE");
       return this.getSongVotes();
     } else {
       throw new Error("Invalid song ID");

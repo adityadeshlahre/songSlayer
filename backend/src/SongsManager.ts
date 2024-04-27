@@ -5,19 +5,11 @@ import { VotingManager } from "./VotingManager";
 export class SongsManager {
   private songs: Song[];
 
-  //   [
-  //     { id: "1", image: "image1.jpg", ytUrl: "youtube.com/song1" },
-  //     { id: "2", image: "image2.jpg", ytUrl: "youtube.com/song2" },
-  //     { id: "3", image: "image3.jpg", ytUrl: "youtube.com/song3" },
-  //     { id: "4", image: "image4.jpg", ytUrl: "youtube.com/song4" },
-  //   ];
-
   private votingManager: VotingManager;
 
   constructor(votingManager: VotingManager) {
     this.songs = [];
     this.votingManager = votingManager;
-    // this.votingManager.initializeSongVotes(this.songs.map((song) => song.id));
   }
 
   private generateRandomId(): string {
@@ -46,9 +38,8 @@ export class SongsManager {
 
   addSong(song: Song): Song[] {
     if (song.id === "") {
-      song.id === this.generateRandomId();
+      song.id = this.generateRandomId();
     }
-    // this will return songs in songsManager
     const existingSong = this.songs.find((s) => s.id === song.id);
     if (!existingSong) {
       this.songs.push(song);

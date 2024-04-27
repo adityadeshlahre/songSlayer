@@ -4,6 +4,7 @@ import { useSocket } from "../hooks/useSocket";
 import {
   GET_ONE_ROOM,
   RESET_VOTE,
+  SUBMIT_SONGS_FOR_VOTE,
   UP_VOTE,
   UP_VOTED,
   VOTE_RESET,
@@ -35,7 +36,10 @@ export const Vote = () => {
 
     const intervalId = setInterval(() => {
       socket.send(
-        JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCodeFromUrl })
+        JSON.stringify({
+          action: GET_ONE_ROOM,
+          roomCode: roomCodeFromUrl,
+        })
       );
     }, 5000);
 
@@ -47,19 +51,30 @@ export const Vote = () => {
       try {
         const messages = JSON.parse(event.data);
         switch (messages.type) {
-          case UP_VOTED:
-            socket.send(JSON.stringify({ action: UP_VOTE, songId: song1Id }));
-            socket.send(JSON.stringify({ action: UP_VOTE, songId: song2Id }));
-            break;
+          // case UP_VOTED:
+          //   console.log(UP_VOTED);
+          //   socket.send(JSON.stringify({ action: UP_VOTE, songId: songId }));
+          //   break;
           case RESET_VOTE:
             console.log(VOTE_RESET);
             break;
           default:
-            setData(messages.payload);
-            setSong1Vote(messages.payload.song1.votes);
-            setSong2Vote(messages.payload.song2.votes);
-            setSong1Id(messages.payload.song1.id);
-            setSong2Id(messages.payload.song2.id);
+            // const roomSongs = messages.payload.roomSongs;
+            // if (roomSongs.length > 0) {
+            //   const song1 = roomSongs[0].song1;
+            //   const song2 = roomSongs[0].song2;
+            //   setData(roomSongs);
+            //   setSong1Vote(song1.votes);
+            //   setSong2Vote(song2.votes);
+            //   setSong1Id(song1.id);
+            //   setSong2Id(song2.id);
+            // }
+            const room = messages.payload;
+            setData(room);
+            setSong1Vote(room.song1.votes);
+            setSong2Vote(room.song2.votes);
+            setSong1Id(room.song1.id);
+            setSong2Id(room.song2.id);
             break;
         }
       } catch (error) {
@@ -113,6 +128,15 @@ export const Vote = () => {
           <br />
           {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
         </div>
+        <div>
+          <Button
+            onClick={() => {
+              socket.send(JSON.stringify({ action: RESET_VOTE }));
+            }}
+          >
+            Reset Vote
+          </Button>
+        </div>
         <br />
         <br />
         <div>
@@ -130,18 +154,6 @@ export const Vote = () => {
           >
             Vote Song 2
           </Button>
-          <button
-            onClick={() => {
-              socket.send(
-                JSON.stringify({
-                  action: GET_ONE_ROOM,
-                  roomCode: roomCodeFromUrl,
-                })
-              );
-            }}
-          >
-            skdf
-          </button>
         </div>
       </div>
     </>

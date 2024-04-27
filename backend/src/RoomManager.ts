@@ -47,7 +47,7 @@ export class RoomManager {
     const memberId = this.generateMemberId();
     const room: Rooms = {
       roomCode,
-      memberId,
+      memberId: [memberId],
       playerCount: 1,
       players: [memberId],
       song1: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
@@ -67,7 +67,7 @@ export class RoomManager {
       const memberId = this.generateMemberId();
       room.playerCount++;
       room.players.push(memberId);
-      room.memberId = memberId;
+      room.memberId.push(memberId);
       this.PlayerCountManager.incrementPlayerCount();
       this.users.push({ roomCode, memberId, socket });
       return { memberId: memberId };
@@ -129,7 +129,7 @@ export class RoomManager {
 
     randomRoom.playerCount++;
     randomRoom.players.push(memberId);
-    randomRoom.memberId = memberId;
+    randomRoom.memberId.push(memberId);
     this.PlayerCountManager.incrementPlayerCount();
     this.users.push({ roomCode, memberId, socket });
 
@@ -149,14 +149,54 @@ export class RoomManager {
   }
 
   getRoomDetails(roomCode: string): Rooms | undefined {
-    return this.rooms.find((room) => room.roomCode === roomCode);
+    const room = this.rooms.find((room) => room.roomCode === roomCode);
+
+    if (room) {
+      const updatedSongs = this.votingManager.getSongVotes();
+      if (room.song1.id) {
+        const updatedSong1 = updatedSongs.find(
+          (song) => song.id === room.song1.id
+        );
+        if (updatedSong1) {
+          room.song1.song = updatedSong1.song;
+          room.song1.votes = updatedSong1.votes;
+        }
+      }
+
+      if (room.song2.id) {
+        const updatedSong2 = updatedSongs.find(
+          (song) => song.id === room.song2.id
+        );
+        if (updatedSong2) {
+          room.song2.song = updatedSong2.song;
+          room.song2.votes = updatedSong2.votes;
+        }
+      }
+
+      return room;
+    }
+
+    return undefined;
   } // this method is not returning the updates values
+  // this methos need some types fixes
 
   allRoomDetails(): Rooms[] {
     return this.rooms;
   }
 
   pushSongsToRoom(roomCode: string): Rooms[] {
+    const roomIndex = this.rooms.findIndex(
+      (room) => room.roomCode === roomCode
+    );
+    if (roomIndex === -1) {
+      throw new Error("Room does not exist");
+    }
+
+    const room = this.rooms[roomIndex];
+    if (room.song1.id && room.song2.id) {
+      return this.rooms;
+    }
+
     const songs: Vote[] = this.votingManager.getSongVotes();
 
     if (songs.length < 2) {
@@ -166,24 +206,21 @@ export class RoomManager {
     const shuffledSongs = songs.sort(() => 0.5 - Math.random());
     const selectedSongs = shuffledSongs.slice(0, 2);
 
-    const roomIndex = this.rooms.findIndex(
-      (room) => room.roomCode === roomCode
-    );
-    if (roomIndex === -1) {
-      throw new Error("Room does not exist");
+    if (!room.song1.id) {
+      this.rooms[roomIndex].song1 = {
+        id: selectedSongs[0].id,
+        song: selectedSongs[0].song,
+        votes: selectedSongs[0].votes,
+      };
     }
 
-    this.rooms[roomIndex].song1 = {
-      id: selectedSongs[0].id,
-      song: selectedSongs[0].song,
-      votes: selectedSongs[0].votes,
-    };
-
-    this.rooms[roomIndex].song2 = {
-      id: selectedSongs[1].id,
-      song: selectedSongs[1].song,
-      votes: selectedSongs[1].votes,
-    };
+    if (!room.song2.id) {
+      this.rooms[roomIndex].song2 = {
+        id: selectedSongs[1].id,
+        song: selectedSongs[1].song,
+        votes: selectedSongs[1].votes,
+      };
+    }
 
     return this.rooms;
   }

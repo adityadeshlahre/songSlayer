@@ -108,7 +108,6 @@ wss.on("connection", function connection(ws) {
       }
     } else if (action === UP_VOTE) {
       try {
-        console.log(songId);
         const songs: Vote[] = votingManager.voteForSong(songId);
         ws.send(JSON.stringify({ type: UP_VOTED, payload: { songs } }));
       } catch (error) {
