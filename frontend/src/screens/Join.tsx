@@ -21,11 +21,9 @@ export const Join = () => {
       const messages = JSON.parse(event.data);
       switch (messages.type) {
         case ROOM_JOINED:
-          if (roomCode === messages.payload.roomCode) {
-            localStorage.setItem("roomCode", messages.payload.roomCode);
-            localStorage.setItem("memberId", messages.payload.memberId);
-            navigate(`/vote/${roomCode}`);
-          }
+          localStorage.setItem("roomCode", messages.payload.roomCode);
+          localStorage.setItem("memberId", messages.payload.memberId);
+          navigate(`/vote/${messages.payload.roomCode}`);
           break;
         case RANDOM_ROOM_JOINED:
           localStorage.setItem("roomCode", messages.payload.roomCode);

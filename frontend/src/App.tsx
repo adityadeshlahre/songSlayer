@@ -4,6 +4,7 @@ import { Landing } from "./screens/Landing";
 import { Join } from "./screens/Join";
 import { Vote } from "./screens/Vote";
 import { Room } from "./screens/Room";
+import { AllRooms } from "./screens/AllRooms";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/join" element={<Join />} />
+          <Route path="/all" element={<AllRooms />} />
           <Route path="/vote/*" element={<Vote />} />
           <Route path="/room/*" element={<Room />} />
         </Routes>
