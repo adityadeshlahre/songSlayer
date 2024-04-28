@@ -1,5 +1,4 @@
-import { Song } from "./Song";
-import { Vote } from "./Vote";
+import { Song, Vote } from "./types";
 
 export class VotingManager {
   private songVotes: Vote[];

@@ -26,3 +26,7 @@ export interface Rooms {
   song1: Vote;
   song2: Vote;
 }
+
+export interface playerCountManager {
+  playerCount: number;
+}

@@ -1,10 +1,8 @@
 import { WebSocket } from "ws";
 import { ROOM_CREATED } from "./Strings";
-import { Rooms } from "./Rooms";
+import { Rooms, Users, Vote } from "./types";
 import { PlayerCountManager } from "./PlayerCountManager";
-import { Users } from "./Users";
 import { VotingManager } from "./VotingManager";
-import { Vote } from "./Vote";
 
 export class RoomManager {
   private rooms: Rooms[];
@@ -45,6 +43,7 @@ export class RoomManager {
   createRoom(socket: WebSocket): { roomCode: string; memberId: string } {
     const roomCode = this.generateRoomCode();
     const memberId = this.generateMemberId();
+    const playerCountManager = new PlayerCountManager();
     const room: Rooms = {
       roomCode,
       memberId: [memberId],
@@ -87,9 +86,11 @@ export class RoomManager {
     if (roomIndex !== -1) {
       const room = this.rooms[roomIndex];
       room.playerCount--;
+      const playerCount = this.PlayerCountManager.getPlayerCount();
       const memberIndex = room.players.indexOf(memberId);
       if (memberIndex !== -1) {
         room.players.splice(memberIndex, 1);
+        this.PlayerCountManager?.decrementPlayerCount();
       }
       if (room.playerCount === 0) {
         this.rooms.splice(roomIndex, 1);

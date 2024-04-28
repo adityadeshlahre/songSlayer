@@ -33,10 +33,8 @@ import {
   SUBMIT_SONGS_TO_VOTE_ADDED,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
-import { Vote } from "./Vote";
-import { Song } from "./Song";
+import { Vote, Song, Rooms } from "./types";
 import { SongsManager } from "./SongsManager";
-import { Rooms } from "./Rooms";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -46,7 +44,6 @@ const songsManager = new SongsManager(votingManager);
 
 wss.on("connection", function connection(ws) {
   ws.on("error", console.error);
-  ws.send("WS Connected");
 
   ws.on("message", (data: string) => {
     const { action, roomCode, songId } = JSON.parse(data);

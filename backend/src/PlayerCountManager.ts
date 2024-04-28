@@ -1,5 +1,5 @@
 export class PlayerCountManager {
-  private playerCount: number;
+  public playerCount: number;
 
   constructor() {
     this.playerCount = 0;
