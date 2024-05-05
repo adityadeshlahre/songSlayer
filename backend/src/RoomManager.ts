@@ -1,18 +1,15 @@
 import { WebSocket } from "ws";
-import { ROOM_CREATED } from "./Strings";
 import { Rooms, Users, Vote } from "./types";
-import { PlayerCountManager } from "./PlayerCountManager";
 import { VotingManager } from "./VotingManager";
+import { ROOM_CREATED } from "./Strings";
 
 export class RoomManager {
   private rooms: Rooms[];
-  private PlayerCountManager: PlayerCountManager;
   private users: Users[];
   private votingManager: VotingManager;
 
   constructor(votingManager: VotingManager) {
     this.rooms = [];
-    this.PlayerCountManager = new PlayerCountManager();
     this.users = [];
     this.votingManager = votingManager;
   }
@@ -43,20 +40,15 @@ export class RoomManager {
   createRoom(socket: WebSocket): { roomCode: string; memberId: string } {
     const roomCode = this.generateRoomCode();
     const memberId = this.generateMemberId();
-    const playerCountManager = new PlayerCountManager();
+    const playerCount = this.getGlobalPlayerCount();
     const room: Rooms = {
-      roomCode,
+      roomCode: roomCode,
       memberId: [memberId],
-      playerCount: 1,
-      players: [memberId],
+      playerCount: playerCount + 1,
       song1: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
       song2: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
     };
     this.rooms.push(room);
-    this.PlayerCountManager.incrementPlayerCount();
-    socket.send(
-      JSON.stringify({ type: ROOM_CREATED, payload: { roomCode, memberId } })
-    );
     return { roomCode, memberId };
   }
 
@@ -65,9 +57,7 @@ export class RoomManager {
     if (room) {
       const memberId = this.generateMemberId();
       room.playerCount++;
-      room.players.push(memberId);
       room.memberId.push(memberId);
-      this.PlayerCountManager.incrementPlayerCount();
       this.users.push({ roomCode, memberId, socket });
       return { memberId: memberId };
     } else {
@@ -86,22 +76,20 @@ export class RoomManager {
     if (roomIndex !== -1) {
       const room = this.rooms[roomIndex];
       room.playerCount--;
-      const playerCount = this.PlayerCountManager.getPlayerCount();
-      const memberIndex = room.players.indexOf(memberId);
+      const memberIndex = room.memberId.indexOf(memberId);
       if (memberIndex !== -1) {
-        room.players.splice(memberIndex, 1);
-        this.PlayerCountManager?.decrementPlayerCount();
+        room.memberId.splice(memberIndex, 1);
       }
       if (room.playerCount === 0) {
         this.rooms.splice(roomIndex, 1);
       }
-      this.PlayerCountManager.decrementPlayerCount();
       const userIndex = this.users.findIndex(
         (user) => user.roomCode === roomCode && user.memberId === memberId
       );
       if (userIndex !== -1) {
         this.users.splice(userIndex, 1);
       }
+      // this.users.push({ roomCode, memberId, socket });
       return { roomCode: roomCode, memberId: memberId };
     } else {
       throw new Error("Room does not exist");
@@ -111,7 +99,7 @@ export class RoomManager {
   getRoomMembers(roomCode: string, socket: WebSocket): string[] {
     const room = this.rooms.find((room) => room.roomCode === roomCode);
     if (room) {
-      return room.players;
+      return room.memberId;
     } else {
       throw new Error("Room does not exist");
     }
@@ -129,10 +117,8 @@ export class RoomManager {
     const { roomCode } = randomRoom;
 
     randomRoom.playerCount++;
-    randomRoom.players.push(memberId);
-    randomRoom.memberId.push(memberId);
-    this.PlayerCountManager.incrementPlayerCount();
     this.users.push({ roomCode, memberId, socket });
+    randomRoom.memberId.push(memberId);
 
     return { roomCode, memberId };
   }
@@ -146,7 +132,8 @@ export class RoomManager {
   }
 
   getGlobalPlayerCount(): number {
-    return this.PlayerCountManager.getPlayerCount();
+    const totalPlayers = this.users.length;
+    return totalPlayers;
   }
 
   getRoomDetails(roomCode: string): Rooms | undefined {

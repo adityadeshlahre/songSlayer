@@ -4,7 +4,6 @@ import { useSocket } from "../hooks/useSocket";
 import {
   GET_ONE_ROOM,
   RESET_VOTE,
-  SUBMIT_SONGS_FOR_VOTE,
   UP_VOTE,
   UP_VOTED,
   VOTE_RESET,
@@ -41,7 +40,7 @@ export const Vote = () => {
           roomCode: roomCodeFromUrl,
         })
       );
-    }, 5000);
+    }, 2000);
 
     // socket.send(
     //   JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCodeFromUrl })
@@ -51,8 +50,9 @@ export const Vote = () => {
       try {
         const messages = JSON.parse(event.data);
         switch (messages.type) {
-          // case UP_VOTED:
-          //   console.log(UP_VOTED);
+          case UP_VOTED:
+            console.log(UP_VOTED);
+            break;
           //   socket.send(JSON.stringify({ action: UP_VOTE, songId: songId }));
           //   break;
           case RESET_VOTE:
@@ -107,6 +107,7 @@ export const Vote = () => {
     <>
       <div className="text-white">{roomCode}</div>
       <div className="text-yellow-200">{JSON.stringify(data)}</div>
+      <br />
       <Button
         onClick={() => {
           navigate("/");
@@ -114,20 +115,23 @@ export const Vote = () => {
       >
         HOME
       </Button>
+      <br />
       <div className="text-white">
         <div>Join</div>Hello WebSocket
       </div>
 
       <br />
       <div>
-        <input className="w-40 h-8" placeholder="Enter Room Code"></input>
+        <br />
+        <center>
+          <div className="flex justify-center box-border h-32 w-32 p-4 border-4 bg-violet-200 text-green-800">
+            {JSON.stringify(song1Id)} : {JSON.stringify(song1Vote)}
+            <br />
+            {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
+          </div>
+        </center>
         <br />
         <br />
-        <div className="flex justify-center box-border h-32 w-32 p-4 border-4 bg-violet-200 text-green-800">
-          {JSON.stringify(song1Id)} : {JSON.stringify(song1Vote)}
-          <br />
-          {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
-        </div>
         <div>
           <Button
             onClick={() => {

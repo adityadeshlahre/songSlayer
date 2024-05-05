@@ -31,6 +31,8 @@ import {
   ONE_ROOM,
   SUBMIT_SONGS_TO_VOTE,
   SUBMIT_SONGS_TO_VOTE_ADDED,
+  GET_ALL_PLAYERS,
+  ALL_PLAYERS,
 } from "./Strings";
 import { VotingManager } from "./VotingManager";
 import { Vote, Song, Rooms } from "./types";
@@ -79,6 +81,13 @@ wss.on("connection", function connection(ws) {
       try {
         const allRoom = roomManager.allRoomDetails();
         ws.send(JSON.stringify({ type: ALL_ROOMS, payload: allRoom }));
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    } else if (action === GET_ALL_PLAYERS) {
+      try {
+        const allPlayers = roomManager.getGlobalPlayerCount();
+        ws.send(JSON.stringify({ type: ALL_PLAYERS, payload: allPlayers }));
       } catch (error) {
         console.error("Error:", error);
       }

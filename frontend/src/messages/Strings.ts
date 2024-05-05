@@ -32,3 +32,5 @@ export const ONE_ROOM = "ONE_ROOM";
 export const GET_ONE_ROOM = "GET_ONE_ROOM";
 export const ALL_ROOMS = "ALL_ROOMS";
 export const GET_ALL_ROOMS = "GET_ALL_ROOMS";
+export const GET_ALL_PLAYERS = "GET_ALL_PLAYRES";
+export const ALL_PLAYERS = "ALL_PLAYRES";

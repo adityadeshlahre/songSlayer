@@ -1,7 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
 import { useEffect, useState } from "react";
-import { GET_ALL_ROOMS } from "../messages/Strings";
+import {
+  GET_ALL_PLAYERS,
+  GET_ALL_ROOMS,
+  ROOM_MEMBERS,
+} from "../messages/Strings";
 import { SocketData } from "../types/socketData";
 import { Button } from "../components/Button";
 
@@ -24,6 +28,9 @@ export const AllRooms = () => {
     socket.onmessage = (event) => {
       const messages = JSON.parse(event.data);
       switch (messages.type) {
+        case ROOM_MEMBERS:
+          console.log(ROOM_MEMBERS);
+          break;
         default:
           const rooms = messages.payload;
           setRooms(rooms);
@@ -63,7 +70,6 @@ export const AllRooms = () => {
             <div>Room Code: {room.roomCode}</div>
             <div>Members ID: {room.memberId.join(" , ")}</div>
             <div>Player Count: {room.playerCount}</div>
-            <div>Players: {room.players.join(" , ")}</div>
             <div>
               Song 1: {room.song1.song.id}, Votes: {room.song1.votes}
             </div>
@@ -74,6 +80,13 @@ export const AllRooms = () => {
           </div>
         ))}
       </div>
+      <button
+        onClick={() => {
+          socket.send(JSON.stringify({ action: GET_ALL_PLAYERS }));
+        }}
+      >
+        ksjdfsjdfkndskfj
+      </button>
     </>
   );
 };

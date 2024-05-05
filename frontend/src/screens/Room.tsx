@@ -52,7 +52,9 @@ export const Room = () => {
       try {
         const messages = JSON.parse(event.data);
         switch (messages.type) {
-          // case UP_VOTED:
+          case UP_VOTED:
+            console.log(UP_VOTED);
+            break;
           //   socket.send(
           //     JSON.stringify({ action: UP_VOTE, songId: songIdToUpVote })
           //   );
@@ -65,6 +67,7 @@ export const Room = () => {
               action: ADD_SONGS,
               songId: { id: songId, image: songImage, ytUrl: songYtUrl },
             });
+            setSongId(songId);
             break;
           default:
             // const roomSongs = messages.payload.roomSongs;
