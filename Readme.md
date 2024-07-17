@@ -18,6 +18,7 @@
 </details>
 
 ### Project Structure
+![image](https://github.com/user-attachments/assets/22d9e042-f98b-4308-8c4d-c20516a88bd4)
 
 #### Backend
 
