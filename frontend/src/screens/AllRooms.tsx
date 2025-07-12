@@ -1,92 +1,105 @@
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
 import { useEffect, useState } from "react";
-import {
-  GET_ALL_PLAYERS,
-  GET_ALL_ROOMS,
-  ROOM_MEMBERS,
-} from "../messages/Strings";
-import { SocketData } from "../types/socketData";
+import { GET_ALL_ROOMS, ALL_ROOMS } from "../messages/Strings";
+import { Room } from "../types/socketData";
 import { Button } from "../components/Button";
 
 export const AllRooms = () => {
   const navigate = useNavigate();
   const socket = useSocket();
-  const [rooms, setRooms] = useState<SocketData[]>();
+  const [rooms, setRooms] = useState<Room[]>([]);
 
   useEffect(() => {
     if (!socket) return;
 
+    // Get all rooms on load
+    socket.send(JSON.stringify({ action: GET_ALL_ROOMS }));
+
+    // Poll for room updates every 3 seconds
     const intervalId = setInterval(() => {
-      socket.send(
-        JSON.stringify({
-          action: GET_ALL_ROOMS,
-        })
-      );
-    }, 2000);
+      socket.send(JSON.stringify({ action: GET_ALL_ROOMS }));
+    }, 3000);
 
     socket.onmessage = (event) => {
-      const messages = JSON.parse(event.data);
-      switch (messages.type) {
-        case ROOM_MEMBERS:
-          console.log(ROOM_MEMBERS);
-          break;
-        default:
-          const rooms = messages.payload;
-          setRooms(rooms);
-          break;
+      const message = JSON.parse(event.data);
+
+      if (message.type === ALL_ROOMS) {
+        setRooms(message.payload.rooms || []);
       }
     };
 
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [socket]);
 
-  if (!socket)
-    return (
-      <>
-        <div className="text-white">Connecting.......</div>
-      </>
-    );
+  const totalUsers = rooms.reduce((sum, room) => sum + room.userCount, 0);
 
   return (
-    <>
-      <div className="text-white">
-        <div>AllRooms</div>Hello WebSocket
-      </div>
-      <Button
-        onClick={() => {
-          navigate("/");
-        }}
-      >
-        HOME
-      </Button>
-      <div className="text-green-200">
-        {rooms?.map((room: any) => (
-          <div key={room.roomCode}>
-            <br />
-            <hr />
-            <div>Room Code: {room.roomCode}</div>
-            <div>Members ID: {room.memberId.join(" , ")}</div>
-            <div>Player Count: {room.playerCount}</div>
-            <div>
-              Song 1: {room.song1.song.id}, Votes: {room.song1.votes}
-            </div>
-            <div>
-              Song 2: {room.song2.song.id}, Votes: {room.song2.votes}
-            </div>
-            <hr />
+    <div className="min-h-screen p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">All Rooms</h1>
+            <p className="text-gray-600">
+              {rooms.length} active rooms • {totalUsers} users online
+            </p>
           </div>
-        ))}
+          <Button onClick={() => navigate("/")} variant="secondary">
+            Back to Home
+          </Button>
+        </div>
+
+        {/* Rooms List */}
+        {rooms.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No active rooms found</p>
+            <Button
+              onClick={() => navigate("/")}
+              // className="mt-4"
+            >
+              Create a Room
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {rooms.map((room) => (
+              <div key={room.roomCode} className="border rounded p-4 space-y-3">
+                <div>
+                  <h3 className="text-lg font-semibold">{room.roomCode}</h3>
+                  <p className="text-sm text-gray-600">
+                    Created: {new Date(room.createdAt).toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm">👥 {room.userCount} users</p>
+                  <p className="text-sm">🎵 {room.queueLength} songs queued</p>
+                  <p className="text-sm">
+                    {room.isPlaying ? "▶️ Playing" : "⏸️ Paused/Stopped"}
+                  </p>
+                </div>
+
+                {room.currentSong && (
+                  <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-600">Now Playing:</p>
+                    <p className="text-sm font-medium truncate">
+                      {room.currentSong.title}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => navigate(`/join?roomCode=${room.roomCode}`)}
+                  variant="primary"
+                >
+                  Join Room
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <button
-        onClick={() => {
-          socket.send(JSON.stringify({ action: GET_ALL_PLAYERS }));
-        }}
-      >
-        ksjdfsjdfkndskfj
-      </button>
-    </>
+    </div>
   );
 };

@@ -1,165 +1,182 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useSocket } from "../hooks/useSocket";
-import {
-  GET_ONE_ROOM,
-  RESET_VOTE,
-  UP_VOTE,
-  UP_VOTED,
-  VOTE_RESET,
-} from "../messages/Strings";
-import { useEffect, useState } from "react";
-import { SocketData } from "../types/socketData";
+import { Song } from "../types/socketData";
 
 export const Vote = () => {
   const navigate = useNavigate();
-  const [roomCode, setRoomCode] = useState<string>("");
-  const [data, setData] = useState<SocketData>();
-  const [song1Vote, setSong1Vote] = useState<number>(0);
-  const [song2Vote, setSong2Vote] = useState<number>(0);
-  const [song1Id, setSong1Id] = useState<string>("");
-  const [song2Id, setSong2Id] = useState<string>("");
+  const [searchParams] = useSearchParams();
+  const roomCode = searchParams.get("roomCode");
+  const userId = searchParams.get("userId");
+
+  const [songQueue, setSongQueue] = useState<Song[]>([]);
+  const [userVotes, setUserVotes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const socket = useSocket();
 
-  const roomCodeFromUrl = useLocation().pathname.split("/").pop();
-
   useEffect(() => {
-    if (!socket) {
+    if (!roomCode || !userId) {
+      navigate("/");
       return;
     }
 
-    if (roomCodeFromUrl) {
-      setRoomCode(roomCodeFromUrl);
-    }
+    if (!socket) return;
 
-    const intervalId = setInterval(() => {
-      socket.send(
-        JSON.stringify({
-          action: GET_ONE_ROOM,
-          roomCode: roomCodeFromUrl,
-        })
-      );
-    }, 2000);
+    const handleMessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
 
-    // socket.send(
-    //   JSON.stringify({ action: GET_ONE_ROOM, roomCode: roomCodeFromUrl })
-    // );
-
-    socket.onmessage = (event) => {
-      try {
-        const messages = JSON.parse(event.data);
-        switch (messages.type) {
-          case UP_VOTED:
-            console.log(UP_VOTED);
-            break;
-          //   socket.send(JSON.stringify({ action: UP_VOTE, songId: songId }));
-          //   break;
-          case RESET_VOTE:
-            console.log(VOTE_RESET);
-            break;
-          default:
-            // const roomSongs = messages.payload.roomSongs;
-            // if (roomSongs.length > 0) {
-            //   const song1 = roomSongs[0].song1;
-            //   const song2 = roomSongs[0].song2;
-            //   setData(roomSongs);
-            //   setSong1Vote(song1.votes);
-            //   setSong2Vote(song2.votes);
-            //   setSong1Id(song1.id);
-            //   setSong2Id(song2.id);
-            // }
-            const room = messages.payload;
-            setData(room);
-            setSong1Vote(room.song1.votes);
-            setSong2Vote(room.song2.votes);
-            setSong1Id(room.song1.id);
-            setSong2Id(room.song2.id);
-            break;
-        }
-      } catch (error) {
-        console.error("Error parsing message data:", error);
+      switch (data.type) {
+        case "ROOM_JOINED":
+          setSongQueue(data.payload.room.songQueue || []);
+          setLoading(false);
+          break;
+        case "QUEUE_UPDATED":
+          setSongQueue(data.payload.queue || []);
+          break;
+        case "SONG_VOTED":
+        case "SONG_UNVOTED":
+          setSongQueue(data.payload.queue || []);
+          break;
+        case "ERROR":
+          console.error("Error:", data.payload.message);
+          break;
       }
     };
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [socket, roomCodeFromUrl]);
+    socket.addEventListener("message", handleMessage);
 
-  useEffect(() => {
-    if (!socket) {
-      const timeoutId = setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [socket]);
-
-  if (!socket)
-    return (
-      <>
-        <div>Connecting.......</div>
-      </>
+    // Join room to get current queue
+    socket.send(
+      JSON.stringify({
+        action: "JOIN_ROOM",
+        roomCode,
+        userId,
+      })
     );
 
-  return (
-    <>
-      <div className="text-white">{roomCode}</div>
-      <div className="text-yellow-200">{JSON.stringify(data)}</div>
-      <br />
-      <Button
-        onClick={() => {
-          navigate("/");
-        }}
-      >
-        HOME
-      </Button>
-      <br />
-      <div className="text-white">
-        <div>Join</div>Hello WebSocket
-      </div>
+    return () => {
+      socket.removeEventListener("message", handleMessage);
+    };
+  }, [socket, roomCode, userId, navigate]);
 
-      <br />
-      <div>
-        <br />
-        <center>
-          <div className="flex justify-center box-border h-32 w-32 p-4 border-4 bg-violet-200 text-green-800">
-            {JSON.stringify(song1Id)} : {JSON.stringify(song1Vote)}
-            <br />
-            {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
-          </div>
-        </center>
-        <br />
-        <br />
-        <div>
-          <Button
-            onClick={() => {
-              socket.send(JSON.stringify({ action: RESET_VOTE }));
-            }}
-          >
-            Reset Vote
-          </Button>
+  const voteSong = (songId: string) => {
+    if (!socket || !roomCode || !userId) return;
+
+    socket.send(
+      JSON.stringify({
+        action: "VOTE_SONG",
+        roomCode,
+        songId,
+        userId,
+      })
+    );
+
+    setUserVotes((prev) => [...prev, songId]);
+  };
+
+  const unvoteSong = (songId: string) => {
+    if (!socket || !roomCode || !userId) return;
+
+    socket.send(
+      JSON.stringify({
+        action: "UNVOTE_SONG",
+        roomCode,
+        songId,
+        userId,
+      })
+    );
+
+    setUserVotes((prev) => prev.filter((id) => id !== songId));
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="max-w-2xl w-full space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Vote for Songs</h1>
+          <p className="text-gray-600">Room: {roomCode}</p>
         </div>
-        <br />
-        <br />
-        <div>
+
+        {songQueue.length === 0 ? (
+          <div className="text-center text-gray-500">
+            No songs in queue to vote for
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {songQueue.map((song, index) => {
+              const hasVoted = userVotes.includes(song.id);
+
+              return (
+                <div
+                  key={song.id}
+                  className="border rounded-lg p-4 flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      #{index + 1} {song.title}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Added by: {song.addedBy}
+                    </div>
+                    {song.url && (
+                      <div className="text-xs text-blue-600 truncate">
+                        {song.url}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">
+                      Votes: {song.votes || 0}
+                    </span>
+
+                    {hasVoted ? (
+                      <Button
+                        onClick={() => unvoteSong(song.id)}
+                        variant="secondary"
+                      >
+                        Unvote
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => voteSong(song.id)}
+                        variant="primary"
+                      >
+                        Vote
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="text-center space-y-2">
           <Button
-            onClick={() => {
-              socket.send(JSON.stringify({ action: UP_VOTE, songId: song1Id }));
-            }}
+            onClick={() =>
+              navigate(`/room?roomCode=${roomCode}&userId=${userId}`)
+            }
+            variant="secondary"
           >
-            Vote Song 1
+            Back to Room
           </Button>
-          <Button
-            onClick={() => {
-              socket.send(JSON.stringify({ action: UP_VOTE, songId: song2Id }));
-            }}
-          >
-            Vote Song 2
+          <br />
+          <Button onClick={() => navigate("/")} variant="primary">
+            Leave Room
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };

@@ -1,36 +1,52 @@
-export const ROOM_CREATED = "ROOM_CREATED";
-export const ROOM_DELETED = "ROOM_DELETED";
-export const ROOM_JOINED = "ROOM_JOINED";
-export const RANDOM_ROOM_JOINED = "RANDOM_ROOM_JOINED";
-export const JOIN_RANDOM_ROOM = "JOIN_RANDOM_ROOM";
+// Room Management
 export const CREATE_ROOM = "CREATE_ROOM";
+export const ROOM_CREATED = "ROOM_CREATED";
 export const JOIN_ROOM = "JOIN_ROOM";
-export const LEFT_ROOM = "LEFT_ROOM";
-export const SOME_ONE_JOINED = "SOME_ONE_JOINED";
-export const GET_ROOM_MEMBERS = "GET_ROOM_MEMBERS";
-export const ROOM_MEMBERS = "ROOM_MEMBERS";
-export const VOTE_FOR_SONG = "VOTE_FOR_SONG";
-export const ALL_SONGS = "ALL_SONGS";
-export const ALL_SONGS_VOTE = "ALL_SONGS_VOTE";
-export const GET_SONGS = "GET_SONGS";
-export const GET_SONGS_VOTE = "GET_SONGS_VOTE";
-export const UP_VOTE = "UP_VOTE";
-export const UP_VOTED = "UP_VOTED";
-export const ADD_SONGS = "ADD_SONGS";
-export const SONGS_ADDED = "SONGS_ADDED";
-export const SUBMIT_SONGS_FOR_VOTE = "SUBMIT_SONGS_FOR_VOTE";
-export const SUBMITED_SONGS_FOR_VOTE_ADDED = "SUBMITED_SONGS_FOR_VOTE_ADDED";
-export const SUBMIT_SONGS_TO_VOTE = "SUBMIT_SONGS_TO_VOTE";
-export const SUBMIT_SONGS_TO_VOTE_ADDED = "SUBMIT_SONGS_TO_VOTE_ADDED";
-export const REMOVE_SONG = "REMOVE_SONG";
-export const SONG_REMOVED = "SONG_REMOVED";
-export const SONG_WON = "SONG_WON";
-export const SONG_WON_URL = "SONG_WON_URL";
-export const RESET_VOTE = "RESET_VOTE";
-export const VOTE_RESET = "VOTE_RESET_DONE";
-export const ONE_ROOM = "ONE_ROOM";
-export const GET_ONE_ROOM = "GET_ONE_ROOM";
-export const ALL_ROOMS = "ALL_ROOMS";
+export const ROOM_JOINED = "ROOM_JOINED";
+export const LEAVE_ROOM = "LEAVE_ROOM";
+export const ROOM_LEFT = "ROOM_LEFT";
+export const GET_ROOM_INFO = "GET_ROOM_INFO";
+export const ROOM_INFO = "ROOM_INFO";
 export const GET_ALL_ROOMS = "GET_ALL_ROOMS";
-export const GET_ALL_PLAYERS = "GET_ALL_PLAYRES";
-export const ALL_PLAYERS = "ALL_PLAYRES";
+export const ALL_ROOMS = "ALL_ROOMS";
+
+// Admin Authentication
+export const ADMIN_LOGIN = "ADMIN_LOGIN";
+export const ADMIN_LOGIN_SUCCESS = "ADMIN_LOGIN_SUCCESS";
+export const ADMIN_LOGIN_FAILED = "ADMIN_LOGIN_FAILED";
+
+// Song Queue Management
+export const ADD_SONG_TO_QUEUE = "ADD_SONG_TO_QUEUE";
+export const SONG_ADDED_TO_QUEUE = "SONG_ADDED_TO_QUEUE";
+export const REMOVE_SONG_FROM_QUEUE = "REMOVE_SONG_FROM_QUEUE";
+export const SONG_REMOVED_FROM_QUEUE = "SONG_REMOVED_FROM_QUEUE";
+export const GET_QUEUE = "GET_QUEUE";
+export const QUEUE_UPDATED = "QUEUE_UPDATED";
+
+// Admin Music Controls
+export const PLAY_SONG = "PLAY_SONG";
+export const PAUSE_SONG = "PAUSE_SONG";
+export const RESUME_SONG = "RESUME_SONG";
+export const SKIP_SONG = "SKIP_SONG";
+export const CHANGE_SONG_PRIORITY = "CHANGE_SONG_PRIORITY";
+export const PLAY_SONG_INSTANTLY = "PLAY_SONG_INSTANTLY";
+
+// Music Player State
+export const SONG_STARTED = "SONG_STARTED";
+export const SONG_PAUSED = "SONG_PAUSED";
+export const SONG_RESUMED = "SONG_RESUMED";
+export const SONG_ENDED = "SONG_ENDED";
+export const SONG_SKIPPED = "SONG_SKIPPED";
+export const PLAYER_STATE_UPDATED = "PLAYER_STATE_UPDATED";
+
+// User Management
+export const USER_JOINED = "USER_JOINED";
+export const USER_LEFT = "USER_LEFT";
+export const GET_ROOM_USERS = "GET_ROOM_USERS";
+export const ROOM_USERS = "ROOM_USERS";
+
+// Error Messages
+export const ERROR = "ERROR";
+export const UNAUTHORIZED = "UNAUTHORIZED";
+export const ROOM_NOT_FOUND = "ROOM_NOT_FOUND";
+export const INVALID_SONG = "INVALID_SONG";

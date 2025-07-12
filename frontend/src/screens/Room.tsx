@@ -1,217 +1,328 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "../components/Button";
-import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
+import { useEffect, useState } from "react";
 import {
-  UP_VOTED,
-  RESET_VOTE,
-  VOTE_RESET,
-  ADD_SONGS,
-  SUBMIT_SONGS_FOR_VOTE,
-  SONGS_ADDED,
-  UP_VOTE,
-  GET_ONE_ROOM,
+  GET_ROOM_INFO,
+  ROOM_INFO,
+  GET_QUEUE,
+  QUEUE_UPDATED,
+  ADD_SONG_TO_QUEUE,
+  SONG_ADDED_TO_QUEUE,
+  REMOVE_SONG_FROM_QUEUE,
+  SONG_REMOVED_FROM_QUEUE,
+  PLAY_SONG,
+  PAUSE_SONG,
+  RESUME_SONG,
+  SKIP_SONG,
+  PLAY_SONG_INSTANTLY,
+  CHANGE_SONG_PRIORITY,
+  SONG_STARTED,
+  SONG_PAUSED,
+  SONG_RESUMED,
+  SONG_SKIPPED,
+  USER_JOINED,
+  USER_LEFT,
+  ERROR,
 } from "../messages/Strings";
-import { SocketData } from "../types/socketData";
+import {
+  Room as RoomType,
+  QueuedSong,
+  MusicPlayerState,
+} from "../types/socketData";
+import { Button } from "../components/Button";
 
 export const Room = () => {
   const navigate = useNavigate();
-  const [roomCode, setRoomCode] = useState<string>("");
-  const [songId, setSongId] = useState<string>("");
-  const [songImage, setSongImage] = useState<string>("");
-  const [songYtUrl, setSongYtUrl] = useState<string>("");
-  const [data, setData] = useState<SocketData>();
-  const [song1Vote, setSong1Vote] = useState<number>(0);
-  const [song2Vote, setSong2Vote] = useState<number>(0);
-  const [song1Id, setSong1Id] = useState<string>("");
-  const [song2Id, setSong2Id] = useState<string>("");
-
   const socket = useSocket();
+  const { roomCode } = useParams<{ roomCode: string }>();
+  const [room, setRoom] = useState<RoomType | null>(null);
+  const [queue, setQueue] = useState<QueuedSong[]>([]);
+  const [newSong, setNewSong] = useState("");
+  const [playerState, setPlayerState] = useState<MusicPlayerState | null>(null);
 
-  const roomCodeFromUrl = useLocation().pathname.split("/").pop();
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const userId =
+    localStorage.getItem("userId") || localStorage.getItem("adminId") || "";
 
   useEffect(() => {
-    if (!socket) {
-      return;
-    }
+    if (!socket || !roomCode) return;
 
-    if (roomCodeFromUrl) {
-      setRoomCode(roomCodeFromUrl);
-    }
-
-    const intervalId = setInterval(() => {
-      socket.send(
-        JSON.stringify({
-          action: GET_ONE_ROOM,
-          roomCode: roomCodeFromUrl,
-        })
-      );
-    }, 5000);
+    // Get initial room info and queue
+    socket.send(JSON.stringify({ action: GET_ROOM_INFO, roomCode }));
+    socket.send(JSON.stringify({ action: GET_QUEUE, roomCode }));
 
     socket.onmessage = (event) => {
-      try {
-        const messages = JSON.parse(event.data);
-        switch (messages.type) {
-          case UP_VOTED:
-            console.log(UP_VOTED);
-            break;
-          //   socket.send(
-          //     JSON.stringify({ action: UP_VOTE, songId: songIdToUpVote })
-          //   );
-          //   break;
-          case RESET_VOTE:
-            console.log(VOTE_RESET);
-            break;
-          case SONGS_ADDED:
-            JSON.stringify({
-              action: ADD_SONGS,
-              songId: { id: songId, image: songImage, ytUrl: songYtUrl },
-            });
-            setSongId(songId);
-            break;
-          default:
-            // const roomSongs = messages.payload.roomSongs;
-            // if (roomSongs.length > 0) {
-            //   const song1 = roomSongs[0].song1;
-            //   const song2 = roomSongs[0].song2;
-            //   setData(roomSongs);
-            //   setSong1Vote(song1.votes);
-            //   setSong2Vote(song2.votes);
-            //   setSong1Id(song1.id);
-            //   setSong2Id(song2.id);
-            // }
-            const room = messages.payload;
-            setData(room);
-            setSong1Vote(room.song1.votes);
-            setSong2Vote(room.song2.votes);
-            setSong1Id(room.song1.id);
-            setSong2Id(room.song2.id);
-            break;
-        }
-      } catch (error) {
-        console.error("Error parsing message data:", error);
+      const message = JSON.parse(event.data);
+
+      switch (message.type) {
+        case ROOM_INFO:
+          setRoom(message.payload.room);
+          break;
+
+        case QUEUE_UPDATED:
+          setQueue(message.payload.queue || []);
+          break;
+
+        case SONG_ADDED_TO_QUEUE:
+          setQueue(message.payload.queue || []);
+          setNewSong("");
+          break;
+
+        case SONG_REMOVED_FROM_QUEUE:
+          setQueue(message.payload.queue || []);
+          break;
+
+        case SONG_STARTED:
+        case SONG_PAUSED:
+        case SONG_RESUMED:
+          if (message.payload.playerState) {
+            setPlayerState(message.payload.playerState);
+          }
+          // Refresh room info to get current song
+          socket.send(JSON.stringify({ action: GET_ROOM_INFO, roomCode }));
+          break;
+
+        case SONG_SKIPPED:
+          // Refresh room info and queue
+          socket.send(JSON.stringify({ action: GET_ROOM_INFO, roomCode }));
+          socket.send(JSON.stringify({ action: GET_QUEUE, roomCode }));
+          break;
+
+        case USER_JOINED:
+        case USER_LEFT:
+          // Refresh room info for user count
+          socket.send(JSON.stringify({ action: GET_ROOM_INFO, roomCode }));
+          break;
+
+        case ERROR:
+          alert(`Error: ${message.payload.message}`);
+          break;
       }
     };
+  }, [socket, roomCode]);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [socket, roomCodeFromUrl]);
+  const addSongToQueue = () => {
+    if (!socket || !newSong.trim()) return;
 
-  useEffect(() => {
-    if (!socket) {
-      const timeoutId = setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [socket]);
-
-  if (!socket)
-    return (
-      <>
-        <div>Connecting.......</div>
-      </>
+    socket.send(
+      JSON.stringify({
+        action: ADD_SONG_TO_QUEUE,
+        roomCode,
+        song: newSong.trim(),
+        userId,
+      })
     );
+  };
+
+  const removeSong = (songId: string) => {
+    if (!socket) return;
+
+    socket.send(
+      JSON.stringify({
+        action: REMOVE_SONG_FROM_QUEUE,
+        roomCode,
+        songId,
+        userId,
+      })
+    );
+  };
+
+  const playPauseResume = () => {
+    if (!socket || !isAdmin) return;
+
+    const action = room?.isPlaying
+      ? PAUSE_SONG
+      : room?.isPlaying
+      ? RESUME_SONG
+      : PLAY_SONG;
+
+    socket.send(
+      JSON.stringify({
+        action,
+        roomCode,
+        adminId: userId,
+      })
+    );
+  };
+
+  const skipSong = () => {
+    if (!socket || !isAdmin) return;
+
+    socket.send(
+      JSON.stringify({
+        action: SKIP_SONG,
+        roomCode,
+        adminId: userId,
+      })
+    );
+  };
+
+  const playInstantly = (songId: string) => {
+    if (!socket || !isAdmin) return;
+
+    socket.send(
+      JSON.stringify({
+        action: PLAY_SONG_INSTANTLY,
+        roomCode,
+        songId,
+        adminId: userId,
+      })
+    );
+  };
+
+  const changePriority = (songId: string, newPriority: number) => {
+    if (!socket || !isAdmin) return;
+
+    socket.send(
+      JSON.stringify({
+        action: CHANGE_SONG_PRIORITY,
+        roomCode,
+        songId,
+        newPriority,
+        adminId: userId,
+      })
+    );
+  };
+
+  if (!room) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading room...</div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="text-white">{roomCode}</div>
-      <div className="text-yellow-200">{JSON.stringify(data)}</div>
-      <Button
-        onClick={() => {
-          navigate("/");
-        }}
-      >
-        HOME
-      </Button>
-      <div className="text-white">
-        <div>Join</div>Hello WebSocket
-      </div>
-      <br />
-      <br />
-      <center>
-        <div className="flex justify-center items-center box-border h-32 w-32 p-4 border-4 bg-violet-200 text-green-800">
+    <div className="min-h-screen p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
           <div>
-            {JSON.stringify(song1Id)} : {JSON.stringify(song1Vote)}
-            <br />
-            {JSON.stringify(song2Id)} : {JSON.stringify(song2Vote)}
+            <h1 className="text-2xl font-bold">Room {roomCode}</h1>
+            <p className="text-gray-600">
+              {room.userCount} users • {isAdmin ? "Admin" : "User"}
+            </p>
           </div>
-        </div>
-      </center>
-      <br />
-      <br />
-      <div>
-        <Button
-          onClick={() => {
-            socket.send(JSON.stringify({ action: RESET_VOTE }));
-          }}
-        >
-          Reset Vote
-        </Button>
-      </div>
-      <br />
-      <div>
-        <div>
-          <Button
-            onClick={() => {
-              socket.send(JSON.stringify({ action: UP_VOTE, songId: song1Id }));
-            }}
-          >
-            Vote Song 1
-          </Button>
-          <Button
-            onClick={() => {
-              socket.send(JSON.stringify({ action: UP_VOTE, songId: song2Id }));
-            }}
-          >
-            Vote Song 2
+          <Button onClick={() => navigate("/")} variant="secondary">
+            Leave Room
           </Button>
         </div>
 
-        <br />
-        <br />
-        <div className="text-white">Input Song To Add In Qeueu</div>
-        <br />
-        <br />
-        <input
-          value={songImage}
-          onChange={(e) => setSongImage(e.target.value)}
-          className="w-40 h-8"
-          placeholder="Enter Song Image"
-        ></input>
-        <br />
-        <br />
-        <input
-          value={songYtUrl}
-          onChange={(e) => setSongYtUrl(e.target.value)}
-          className="w-40 h-8"
-          placeholder="Enter Song YTurl"
-        ></input>
-        <br />
-        <br />
-        <div>
-          {/* this button need to be fixed */}
-          <Button
-            onClick={() => {
-              socket.send(
-                JSON.stringify({
-                  action: ADD_SONGS,
-                  songId: { id: songId, image: songImage, ytUrl: songYtUrl },
-                })
-              );
-              socket.send(
-                JSON.stringify({
-                  action: SUBMIT_SONGS_FOR_VOTE,
-                  roomCode: roomCode,
-                })
-              );
-            }}
-          >
-            Add Songs
-          </Button>
+        {/* Current Song */}
+        <div className="border rounded p-4">
+          <h2 className="text-lg font-semibold mb-2">Now Playing</h2>
+          {room.currentSong ? (
+            <div className="space-y-2">
+              <p className="font-medium">{room.currentSong.title}</p>
+              <p className="text-sm text-gray-600">
+                Added by: {room.currentSong.addedBy}
+              </p>
+              <div className="flex space-x-2">
+                {isAdmin && (
+                  <>
+                    <Button onClick={playPauseResume}>
+                      {room.isPlaying
+                        ? "Pause"
+                        : room.isPlaying
+                        ? "Resume"
+                        : "Play"}
+                    </Button>
+                    <Button onClick={skipSong} variant="secondary">
+                      Skip
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500">No song currently playing</p>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="border rounded p-4">
+          <h2 className="text-lg font-semibold mb-2">Actions</h2>
+          <div className="flex space-x-2">
+            <Button
+              onClick={() =>
+                navigate(`/vote?roomCode=${roomCode}&userId=${userId}`)
+              }
+              variant="primary"
+            >
+              Vote on Songs
+            </Button>
+          </div>
+        </div>
+
+        {/* Add Song */}
+        <div className="border rounded p-4">
+          <h2 className="text-lg font-semibold mb-2">Add Song</h2>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Song title or YouTube URL"
+              value={newSong}
+              onChange={(e) => setNewSong(e.target.value)}
+              className="flex-1 p-2 border rounded"
+            />
+            <Button onClick={addSongToQueue}>Add to Queue</Button>
+          </div>
+        </div>
+
+        {/* Queue */}
+        <div className="border rounded p-4">
+          <h2 className="text-lg font-semibold mb-2">
+            Queue ({queue.length} songs)
+          </h2>
+          {queue.length === 0 ? (
+            <p className="text-gray-500">No songs in queue</p>
+          ) : (
+            <div className="space-y-2">
+              {queue.map((song, index) => (
+                <div
+                  key={song.id}
+                  className="flex items-center justify-between p-2 border rounded"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {index + 1}. {song.title}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Added by: {song.addedBy} • Priority: {song.priority}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {isAdmin && (
+                      <>
+                        <Button
+                          onClick={() => playInstantly(song.id)}
+                          variant="secondary"
+                        >
+                          Play Now
+                        </Button>
+                        <Button
+                          onClick={() => changePriority(song.id, 0)}
+                          variant="secondary"
+                        >
+                          Move to Top
+                        </Button>
+                      </>
+                    )}
+                    {(isAdmin || song.addedBy === userId) && (
+                      <Button
+                        onClick={() => removeSong(song.id)}
+                        variant="danger"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
