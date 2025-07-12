@@ -1,215 +1,203 @@
 import { WebSocket } from "ws";
-import { Rooms, Users, Vote } from "./types";
-import { VotingManager } from "./VotingManager";
-import { ROOM_CREATED } from "./Strings";
+import { Room, User, Admin } from "./types";
+import { generateRoomCode, generateMemberId } from "./utils";
 
 export class RoomManager {
-  private rooms: Rooms[];
-  private users: Users[];
-  private votingManager: VotingManager;
+  private rooms: Map<string, Room>;
+  private users: Map<string, User>;
+  private admins: Map<string, Admin>;
 
-  constructor(votingManager: VotingManager) {
-    this.rooms = [];
-    this.users = [];
-    this.votingManager = votingManager;
+  constructor() {
+    this.rooms = new Map();
+    this.users = new Map();
+    this.admins = new Map();
   }
 
-  private generateRoomCode(): string {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let roomCode = "";
-    for (let i = 0; i < 6; i++) {
-      roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    if (this.rooms.find((room) => room.roomCode === roomCode)) {
-      return this.generateRoomCode();
-    }
-    return roomCode;
-  }
+  public createRoom(socket: WebSocket, password: string): { roomCode: string; adminId: string } {
+    const roomCode = generateRoomCode();
+    const adminId = generateMemberId();
 
-  private generateMemberId(): string {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let memberId = "";
-    for (let i = 0; i < 8; i++) {
-      memberId += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return memberId;
-  }
-
-  createRoom(socket: WebSocket): { roomCode: string; memberId: string } {
-    const roomCode = this.generateRoomCode();
-    const memberId = this.generateMemberId();
-    const playerCount = this.getGlobalPlayerCount();
-    const room: Rooms = {
-      roomCode: roomCode,
-      memberId: [memberId],
-      playerCount: playerCount + 1,
-      song1: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
-      song2: { id: "", song: { id: "", image: "", ytUrl: "" }, votes: 0 },
+    const admin: Admin = {
+      id: adminId,
+      roomCode,
+      socket,
+      password
     };
-    this.rooms.push(room);
-    return { roomCode, memberId };
+
+    const room: Room = {
+      roomCode,
+      adminId,
+      users: [],
+      songQueue: [],
+      currentSong: null,
+      isPlaying: false,
+      isPaused: false,
+      createdAt: Date.now()
+    };
+
+    this.rooms.set(roomCode, room);
+    this.admins.set(adminId, admin);
+
+    return { roomCode, adminId };
   }
 
-  joinRoom(roomCode: string, socket: WebSocket): { memberId: string } {
-    const room = this.rooms.find((room) => room.roomCode === roomCode);
-    if (room) {
-      const memberId = this.generateMemberId();
-      room.playerCount++;
-      room.memberId.push(memberId);
-      this.users.push({ roomCode, memberId, socket });
-      return { memberId: memberId };
-    } else {
+  public joinRoom(roomCode: string, socket: WebSocket): { userId: string } {
+    console.log(roomCode);
+    const room = this.rooms.get(roomCode);
+    console.log(room);
+    if (!room) {
       throw new Error("Room does not exist");
     }
+
+    const userId = generateMemberId();
+    const user: User = {
+      id: userId,
+      roomCode,
+      socket,
+      isAdmin: false
+    };
+
+    this.users.set(userId, user);
+    room.users.push(userId);
+
+    // Notify all users in the room about new user (except the user who just joined)
+    this.broadcastToRoom(roomCode, {
+      type: "USER_JOINED",
+      payload: { userId, totalUsers: room.users.length }
+    }, userId);
+
+    return { userId };
   }
 
-  removeMemberFromRoom(
-    roomCode: string,
-    memberId: string,
-    socket: WebSocket
-  ): { roomCode: string; memberId: string } {
-    const roomIndex = this.rooms.findIndex(
-      (room) => room.roomCode === roomCode
-    );
-    if (roomIndex !== -1) {
-      const room = this.rooms[roomIndex];
-      room.playerCount--;
-      const memberIndex = room.memberId.indexOf(memberId);
-      if (memberIndex !== -1) {
-        room.memberId.splice(memberIndex, 1);
-      }
-      if (room.playerCount === 0) {
-        this.rooms.splice(roomIndex, 1);
-      }
-      const userIndex = this.users.findIndex(
-        (user) => user.roomCode === roomCode && user.memberId === memberId
-      );
-      if (userIndex !== -1) {
-        this.users.splice(userIndex, 1);
-      }
-      // this.users.push({ roomCode, memberId, socket });
-      return { roomCode: roomCode, memberId: memberId };
-    } else {
+  public authenticateAdmin(roomCode: string, password: string, socket: WebSocket): { adminId: string } {
+    const room = this.rooms.get(roomCode);
+    if (!room) {
       throw new Error("Room does not exist");
     }
-  }
 
-  getRoomMembers(roomCode: string, socket: WebSocket): string[] {
-    const room = this.rooms.find((room) => room.roomCode === roomCode);
+    const admin = this.admins.get(room.adminId);
+    if (!admin || admin.password !== password) {
+      throw new Error("Invalid admin credentials");
+    }
+
+    // Update admin socket if reconnecting
+    admin.socket = socket;
+    this.admins.set(admin.id, admin);
+
+    return { adminId: admin.id };
+  } public leaveRoom(userId: string): void {
+    const user = this.users.get(userId);
+    if (!user) return;
+
+    const room = this.rooms.get(user.roomCode);
     if (room) {
-      return room.memberId;
-    } else {
-      throw new Error("Room does not exist");
+      room.users = room.users.filter(id => id !== userId);
+
+      // Notify remaining users
+      this.broadcastToRoom(user.roomCode, {
+        type: "USER_LEFT",
+        payload: { userId, totalUsers: room.users.length }
+      });
+
+      // If no users left and admin disconnected, delete room
+      if (room.users.length === 0 && !this.isAdminConnected(room.adminId)) {
+        this.rooms.delete(user.roomCode);
+        this.admins.delete(room.adminId);
+      }
     }
+
+    this.users.delete(userId);
   }
 
-  joinRandomRoom(socket: WebSocket): { roomCode: string; memberId: string } {
-    if (this.rooms.length === 0) {
-      throw new Error("No available rooms to join");
+  public disconnectUser(socket: WebSocket): void {
+    // Find and disconnect user
+    for (const [userId, user] of this.users.entries()) {
+      if (user.socket === socket) {
+        this.leaveRoom(userId);
+        return;
+      }
     }
 
-    const randomIndex = Math.floor(Math.random() * this.rooms.length);
-    const randomRoom = this.rooms[randomIndex];
-
-    const memberId = this.generateMemberId();
-    const { roomCode } = randomRoom;
-
-    randomRoom.playerCount++;
-    this.users.push({ roomCode, memberId, socket });
-    randomRoom.memberId.push(memberId);
-
-    return { roomCode, memberId };
-  }
-
-  disconnectUser(socket: WebSocket): void {
-    const userIndex = this.users.findIndex((user) => user.socket === socket);
-    if (userIndex !== -1) {
-      const { roomCode, memberId } = this.users[userIndex];
-      this.removeMemberFromRoom(roomCode, memberId, socket);
-    }
-  }
-
-  getGlobalPlayerCount(): number {
-    const totalPlayers = this.users.length;
-    return totalPlayers;
-  }
-
-  getRoomDetails(roomCode: string): Rooms | undefined {
-    const room = this.rooms.find((room) => room.roomCode === roomCode);
-
-    if (room) {
-      const updatedSongs = this.votingManager.getSongVotes();
-      if (room.song1.id) {
-        const updatedSong1 = updatedSongs.find(
-          (song) => song.id === room.song1.id
-        );
-        if (updatedSong1) {
-          room.song1.song = updatedSong1.song;
-          room.song1.votes = updatedSong1.votes;
+    // Find and disconnect admin
+    for (const [adminId, admin] of this.admins.entries()) {
+      if (admin.socket === socket) {
+        const room = this.rooms.get(admin.roomCode);
+        if (room) {
+          // If no users left, delete the room
+          if (room.users.length === 0) {
+            this.rooms.delete(admin.roomCode);
+            this.admins.delete(adminId);
+          } else {
+            // Just mark admin as disconnected by setting socket to null
+            admin.socket = null as any;
+            this.admins.set(adminId, admin);
+          }
         }
+        return;
       }
-
-      if (room.song2.id) {
-        const updatedSong2 = updatedSongs.find(
-          (song) => song.id === room.song2.id
-        );
-        if (updatedSong2) {
-          room.song2.song = updatedSong2.song;
-          room.song2.votes = updatedSong2.votes;
-        }
-      }
-
-      return room;
     }
-
-    return undefined;
-  } // this method is not returning the updates values
-  // this methos need some types fixes
-
-  allRoomDetails(): Rooms[] {
-    return this.rooms;
   }
 
-  pushSongsToRoom(roomCode: string): Rooms[] {
-    const roomIndex = this.rooms.findIndex(
-      (room) => room.roomCode === roomCode
-    );
-    if (roomIndex === -1) {
-      throw new Error("Room does not exist");
+  public getRoomInfo(roomCode: string): Room | null {
+    return this.rooms.get(roomCode) || null;
+  }
+
+  public getAllRooms(): Room[] {
+    return Array.from(this.rooms.values());
+  }
+
+  public getRoomUsers(roomCode: string): User[] {
+    const room = this.rooms.get(roomCode);
+    if (!room) return [];
+
+    return room.users.map(userId => this.users.get(userId)).filter(Boolean) as User[];
+  }
+
+  public isUserInRoom(userId: string, roomCode: string): boolean {
+    const user = this.users.get(userId);
+    return user?.roomCode === roomCode;
+  }
+
+  public isAdmin(userId: string): boolean {
+    return this.admins.has(userId);
+  }
+
+  public isAdminConnected(adminId: string): boolean {
+    const admin = this.admins.get(adminId);
+    return !!(admin && admin.socket !== null);
+  }
+
+  public broadcastToRoom(roomCode: string, message: any, excludeUserId?: string): void {
+    const room = this.rooms.get(roomCode);
+    if (!room) return;
+
+    // Send to all users in room (except excluded user)
+    room.users.forEach(userId => {
+      if (excludeUserId && userId === excludeUserId) return;
+      const user = this.users.get(userId);
+      if (user && user.socket.readyState === WebSocket.OPEN) {
+        user.socket.send(JSON.stringify(message));
+      }
+    });
+
+    // Send to admin if connected (and not excluded)
+    const admin = this.admins.get(room.adminId);
+    if (admin && admin.socket && admin.socket.readyState === WebSocket.OPEN) {
+      if (!excludeUserId || room.adminId !== excludeUserId) {
+        admin.socket.send(JSON.stringify(message));
+      }
     }
+  }
 
-    const room = this.rooms[roomIndex];
-    if (room.song1.id && room.song2.id) {
-      return this.rooms;
+  public getRoom(roomCode: string): Room | undefined {
+    return this.rooms.get(roomCode);
+  }
+
+  public updateRoom(roomCode: string, updates: Partial<Room>): void {
+    const room = this.rooms.get(roomCode);
+    if (room) {
+      Object.assign(room, updates);
+      this.rooms.set(roomCode, room);
     }
-
-    const songs: Vote[] = this.votingManager.getSongVotes();
-
-    if (songs.length < 2) {
-      throw new Error("Not enough songs available for voting");
-    }
-
-    const shuffledSongs = songs.sort(() => 0.5 - Math.random());
-    const selectedSongs = shuffledSongs.slice(0, 2);
-
-    if (!room.song1.id) {
-      this.rooms[roomIndex].song1 = {
-        id: selectedSongs[0].id,
-        song: selectedSongs[0].song,
-        votes: selectedSongs[0].votes,
-      };
-    }
-
-    if (!room.song2.id) {
-      this.rooms[roomIndex].song2 = {
-        id: selectedSongs[1].id,
-        song: selectedSongs[1].song,
-        votes: selectedSongs[1].votes,
-      };
-    }
-
-    return this.rooms;
   }
 }
