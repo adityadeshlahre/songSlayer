@@ -1,15 +1,42 @@
 import { WebSocket } from "ws";
 
-export interface Users {
+export interface User {
+  id: string;
   roomCode: string;
-  memberId: string;
   socket: WebSocket;
+  isAdmin: boolean;
+}
+
+export interface Admin {
+  id: string;
+  roomCode: string;
+  socket: WebSocket;
+  password: string;
 }
 
 export interface Song {
   id: string;
-  image: string;
-  ytUrl: string;
+  title: string;
+  url: string; // YouTube URL or any other URL
+  addedBy: string; // User ID who added the song
+  addedAt: number; // Timestamp
+  duration?: number; // Optional song duration in seconds
+  thumbnail?: string; // Optional thumbnail URL for YouTube videos
+}
+
+export interface QueuedSong extends Song {
+  priority: number; // For admin to change priority
+}
+
+export interface Room {
+  roomCode: string;
+  adminId: string;
+  users: string[]; // User IDs
+  songQueue: QueuedSong[]; // FIFO queue
+  currentSong: Song | null;
+  isPlaying: boolean;
+  isPaused: boolean;
+  createdAt: number;
 }
 
 export interface Vote {
@@ -18,10 +45,10 @@ export interface Vote {
   votes: number;
 }
 
-export interface Rooms {
-  roomCode: string;
-  memberId: string[];
-  playerCount: number;
-  song1: Vote;
-  song2: Vote;
+export interface MusicPlayerState {
+  currentSong: Song | null;
+  isPlaying: boolean;
+  isPaused: boolean;
+  currentTime: number;
+  duration: number;
 }
